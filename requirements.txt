@@ -1,0 +1,4 @@
+requests
+setuptools
+python-telegram-bot
+schedule
