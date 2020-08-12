@@ -63,15 +63,9 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
 schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
 schedule.every().day.at("07:30").do(run_threaded, giorna.fetchData)
 logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
-# ~ schedule.every().minutes.do(giorna.updateStatus)
 
 #Start bot
 giorna.start()
-# ~ chat = config['local']['myChannel']
-# ~ filePath = "/home/pi/Documents/Giornalettiere/requirements.txt"
-# ~ message = "Questo è un file di prova"
-# ~ giorna.updateChannel()
-# ~ giorna.sendMessage(message, chat=chat, parse_mode=telegram.ParseMode.MARKDOWN_V2)
 
 print('Bot started succesfully')
 logging.info("Bot started succesfully")

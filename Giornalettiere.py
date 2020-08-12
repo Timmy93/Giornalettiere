@@ -30,8 +30,8 @@ class Giornalettiere:
 	#Load config and psw
 	def __init__(self, config, loggingHandler):
 		all_settings_dir 	= "Settings"
-		file_list_path	= "myFileList.json"
-		giornalettiere_db		= "Giornalettiere.db"
+		file_list_path		= "myFileList.json"
+		giornalettiere_db	= "Giornalettiere.db"
 		
 		self.config = config
 		self.logging = loggingHandler
@@ -160,47 +160,7 @@ class Giornalettiere:
 		#Starting bot
 		self.TmUpdater.start_polling()
 		self.logging.info("Bot is now polling for new messages")
-	
-	#The complete function used to notify users
-	def updateStatus(self, peopleToNotify = None):
-		if peopleToNotify is None:
-			#If no specific user are defined broadcast the message
-			peopleToNotify = self.myFileList
-			self.logging.info('updateStatus - Starting periodic update broadcasting')
-		elif type(peopleToNotify) is not list:
-			#If passed a single user transform to list
-			peopleToNotify = [peopleToNotify]
-			self.logging.info('updateStatus - Notifing selected chat')
-		else:
-			self.logging.info('updateStatus - Broadcasting to given chats')
-		
-		#Check if is requested to notify someone
-		if not len(peopleToNotify):
-			self.logging.info('updateStatus - No one to update - Skip refresh')
-			return
-		
-		#Send the notify to subscribed users
-		for relSup in relevant:
-			for user in peopleToNotify:
-				self.sendNotify(user, relSup)		
-		return relevant
-	
-	#Notify all open chat with this bot	
-	def sendNotify(self, user, info):
-		self.logging.info('DISABLED - Sending update to: '+str(user))
-		
-		#TODO Check file name and send if this content has been requested	
-		#Check if there is need to send notify for all supermarkets
-		# ~ if not self.localParameters['']:
-			# ~ self.sendMessage(
-				# ~ "*"+helpers.escape_markdown(nameToUse, 2)+"* \- Circa *"+str(info['people'])+" persone* in fila \(stimati "+str(info['minutes'])+" minuti di coda\)",
-				# ~ user,
-				# ~ telegram.ParseMode.MARKDOWN_V2
-			# ~ )
-			# ~ self.logging.info('Notify sent to '+str(user))		
-		# ~ else:
-			# ~ self.logging.info('Ignoring this supermarket ['+info['id']+']')
-		
+
 	#Send the selected message
 	def sendMessage(self, message, chat=None, parse_mode=None):
 		mex = str(message)[:4095]
@@ -227,7 +187,7 @@ class Giornalettiere:
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
 		except telegram.error.BadRequest:
-			self.logging.error("sendDocument - BadReques - Cannot send message to chat ["+str(chat)+"] - Skip")
+			self.logging.error("sendDocument - BadRequest - Cannot send message to chat ["+str(chat)+"] - Skip")
 		except telegram.error.Unauthorized:
 			self.logging.info("sendDocument - Bot blocked by chat ["+str(chat)+"] - Remove user")
 			self.removeFromFileList(chat)
@@ -238,16 +198,14 @@ class Giornalettiere:
 	def createHandlers(self):
 		#Commands
 		self.TmDispatcher.add_handler(CommandHandler("update", self.updateHandler))
-		# ~ self.TmDispatcher.add_handler(CommandHandler("stop", self.stopHandler))
-		# ~ self.TmDispatcher.add_handler(CommandHandler("report", self.reportHandler))
-		# ~ self.logging.info("createHandlers - Created handlers for command")
+		self.logging.info("createHandlers - Created handlers for command")
 		#Text message
 		self.TmDispatcher.add_handler(MessageHandler(Filters.text, self.textHandler))
 		self.logging.info("createHandlers - Created handlers for text")
 	
 	#Handle a received message
 	def textHandler(self, update=None, context=None):
-		self.logging.info("User id ["+str(update.message.chat.id)+"] - Received text message - Ignoring")
+		self.logging.info("textHandler - Request from user id ["+str(update.message.chat.id)+"]")
 		
 		#Extract all link to download
 		originalLinks = update.message.text.strip().split()
@@ -301,23 +259,3 @@ class Giornalettiere:
 			update.message.reply_text("Ciao "+ str(update.effective_chat.first_name) +" 👋, sto prelevando dei nuovi file 🛒")
 		else:
 			update.message.reply_text("Ciao "+ str(update.effective_chat.first_name) +" 👋, non sono riuscito a trovare nulla di nuovo 🕵️")
-		
-	# ~ #Stop the subscription to the bot
-	# ~ def stopHandler(self, update=None, context=None):
-		# ~ chat_id = str(update.effective_chat.id)
-		# ~ self.logging.info("stopHandler - Bot stopped by: "+str(update.effective_chat))
-		
-		# ~ if chat_id in self.myFileList:
-			# ~ self.removeFromFileList(chat_id)
-			# ~ self.logging.info("stopHandler - "+str(chat_id)+" removed from file list")
-		# ~ else:
-			# ~ self.logging.warning("stopHandler - "+str(chat_id)+" not in file list: "+str(self.myFileList))
-		# ~ update.message.reply_text("Va bene 👍, niente notifiche 🔕\nPremi 👉 /start per ricominciare ad essere aggiornato 🔔")
-	
-	# ~ #Used to report the supermarket queue status
-	# ~ def reportHandler(self, update=None, context=None):
-		# ~ self.logging.info("reportHandler - Report requested by: "+str(update.effective_chat))
-		# ~ update.message.reply_text(
-			# ~ "Visita ["+self.serverInfo['report_site_name']+"]("+self.serverInfo['report_site_url']+") per inviare le segnalazioni 🙋",
-			# ~ parse_mode=telegram.ParseMode.MARKDOWN_V2
-		# ~ )
