@@ -61,6 +61,7 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
 
 #Schedule actions
 schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
+schedule.every().day.at("07:30").do(run_threaded, giorna.fetchData)
 logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
 # ~ schedule.every().minutes.do(giorna.updateStatus)
 

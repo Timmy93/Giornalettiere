@@ -5,5 +5,6 @@
   "myChannel" : "@channelName",
   "fileLocation" : "/my/directory",
   "downloadRequest" : "MyFiles",
-  "downloadSite" : "https://my.site.com"
+  "downloadSite" : "https://my.site.com",
+  "fetcherScript" : "/home/my/script"
 }

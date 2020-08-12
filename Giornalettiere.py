@@ -237,7 +237,7 @@ class Giornalettiere:
 	#Define the approriate handlers
 	def createHandlers(self):
 		#Commands
-		# ~ self.TmDispatcher.add_handler(CommandHandler("start", self.startHandler))
+		self.TmDispatcher.add_handler(CommandHandler("update", self.updateHandler))
 		# ~ self.TmDispatcher.add_handler(CommandHandler("stop", self.stopHandler))
 		# ~ self.TmDispatcher.add_handler(CommandHandler("report", self.reportHandler))
 		# ~ self.logging.info("createHandlers - Created handlers for command")
@@ -279,20 +279,26 @@ class Giornalettiere:
 		payload = {'titolo': self.localParameters['downloadRequest'], 'link': links}
 		r = requests.post(self.localParameters['downloadSite'], data=payload)
 		
-		
+	#Retrieve data to upload on Telegram
+	def fetchData(self):
+		#Get data
+		self.logging.info("fetchData - Fetching new documents")
+		res = subprocess.Popen(["python3", self.localParameters['fetcherScript']], stdout=subprocess.PIPE).communicate()
+		#Decode json result
+		allResult = json.loads(res[0].decode('ascii').strip())
+		result = [f['url'] for f in allResult]
+		self.logging.info("fetchData - Fetched "+ str(len(result)) +" urls")
+		return result
 	
-	#Start the subscription to the bot
-	# ~ def startHandler(self, update=None, context=None):
-		# ~ self.logging.info("startHandler - Bot started by: "+str(update.effective_chat))
-		# ~ if update.effective_chat.id in self.myFileList:
-			# ~ update.message.reply_text("Ciao " + str(update.effective_chat.first_name) + " 👋, controllo se ci sono nuove segnalazioni 🕵️🛒")
-		# ~ else:
-			# ~ self.addToFileList(update.effective_chat.id)
-			# ~ update.message.reply_text("Ciao "+str(update.effective_chat.first_name)+" 👋, da adesso sarai aggiornato 🔔 sulla fila dei supermercati nei dintorni. 🕵️🛒\nPremi 🔕 /stop per non ricevere più notifiche")
-		# ~ relevant = self.updateStatus(peopleToNotify=update.effective_chat.id)
-		# ~ #Notify if no useful supermarket has been found
-		# ~ if not len(relevant):
-			# ~ update.message.reply_text("Tutti i supermercati nei tuoi dintorni sono chiusi oppure pieni.\nContinuo a controllare! 🕵️🛒\nPremi 🔕 /stop per non ricevere più notifiche")
+	#Search for new file to download
+	def updateHandler(self, update=None, context=None):
+		self.logging.info("updateHandler - Bot started by: "+str(update.effective_chat))
+		result = self.fetchData()
+		if len(result):
+			update.message.reply_text("Ciao "+ str(update.effective_chat.first_name) +" 👋, sto prelevando dei nuovi file 🛒")
+			self.requestDownload(result)
+		else:
+			update.message.reply_text("Ciao "+ str(update.effective_chat.first_name) +" 👋, non sono riuscito a trovare nulla di nuovo 🕵️")
 		
 	# ~ #Stop the subscription to the bot
 	# ~ def stopHandler(self, update=None, context=None):
