@@ -288,6 +288,9 @@ class Giornalettiere:
 		allResult = json.loads(res[0].decode('ascii').strip())
 		result = [f['url'] for f in allResult]
 		self.logging.info("fetchData - Fetched "+ str(len(result)) +" urls")
+		#Request download if any link is found
+		if len(result):
+			self.requestDownload(result)
 		return result
 	
 	#Search for new file to download
@@ -296,7 +299,6 @@ class Giornalettiere:
 		result = self.fetchData()
 		if len(result):
 			update.message.reply_text("Ciao "+ str(update.effective_chat.first_name) +" 👋, sto prelevando dei nuovi file 🛒")
-			self.requestDownload(result)
 		else:
 			update.message.reply_text("Ciao "+ str(update.effective_chat.first_name) +" 👋, non sono riuscito a trovare nulla di nuovo 🕵️")
 		
