@@ -64,7 +64,10 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
 # ~ schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
 # ~ logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
 for time in config['local']['dailyChecksAt']:
-	schedule.every().day.at(time).do(run_threaded, giorna.fetchData)
+	try:
+		schedule.every().day.at(time).do(run_threaded, giorna.fetchData)
+	except ScheduleValueError as e:
+		logging.error("Cannot set a scheduled run at ["+str(time)+"]: "+str(e))
 
 
 #Start bot
