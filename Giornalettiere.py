@@ -182,7 +182,7 @@ class Giornalettiere:
 				chat, 
 				document, 
 				caption=message, 
-				timeout=60,
+				timeout=600,
 				disable_notification=False, 
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
@@ -235,7 +235,10 @@ class Giornalettiere:
 			links = "\n".join(links)
 
 		payload = {'titolo': self.localParameters['downloadRequest'], 'link': links}
+		self.logging.info("requestDownload - Request download to my site ["+self.localParameters['downloadSite']+"]")
 		r = requests.post(self.localParameters['downloadSite'], data=payload)
+		files = links.splitlines()
+		self.logging.info("requestDownload - Request download of " + str(len(files)) + " files ["+", ".join(files)+"]")
 		
 	#Retrieve data to upload on Telegram
 	def fetchData(self):
