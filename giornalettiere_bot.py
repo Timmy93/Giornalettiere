@@ -69,6 +69,7 @@ for selected_time in config['local']['dailyChecksAt']:
 		logging.info("Setting daily check at: "+str(selected_time))
 	except schedule.ScheduleValueError as e:
 		logging.error("Cannot set a scheduled run at ["+str(selected_time)+"]: "+str(e))
+		exit()
 
 
 #Start bot
