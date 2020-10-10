@@ -14,6 +14,7 @@ from subprocess import call
 import schedule
 import threading
 from Giornalettiere import Giornalettiere
+from DirectoryWatcher import DirectoryWatcher
 
 #Check if the given path is an absolute path
 def createAbsolutePath(path):
@@ -60,16 +61,37 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
     logging.info("Started by systemd using argument: "+sys.argv[1])
 
 #Schedule actions
-schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
+# ~ schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
+# ~ logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
+schedule.every().day.at("07:00").do(run_threaded, giorna.fetchData)
 schedule.every().day.at("07:30").do(run_threaded, giorna.fetchData)
-logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
+
 
 #Start bot
 giorna.start()
-
 print('Bot started succesfully')
 logging.info("Bot started succesfully")
+
+#Add notifier
+watched_dir = os.path.join(config['local']['fileLocation'], config['local']['downloadRequest']) 
+watcher = DirectoryWatcher(
+	watched_dir,
+	giorna,
+	logging
+)
+watcher.start()
+logging.info("Created notifier succesfully")
+
 
 while 1:
 	time.sleep(1)
 	schedule.run_pending()
+	if not watcher.is_alive():
+		logging.warning("DirectortWatcher is dead, restarting")
+		watcher = DirectoryWatcher(
+			watched_dir,
+			giorna,
+			logging
+		)
+		watcher.start()
+		
