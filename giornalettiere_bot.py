@@ -13,9 +13,8 @@ import requests
 from subprocess import call
 import schedule
 import threading
-import inotify.adapters
-
 from Giornalettiere import Giornalettiere
+from DirectoryWatcher import DirectoryWatcher
 
 #Check if the given path is an absolute path
 def createAbsolutePath(path):
@@ -70,10 +69,29 @@ schedule.every().day.at("07:30").do(run_threaded, giorna.fetchData)
 
 #Start bot
 giorna.start()
-
 print('Bot started succesfully')
 logging.info("Bot started succesfully")
+
+#Add notifier
+watched_dir = os.path.join(config['local']['fileLocation'], config['local']['downloadRequest']) 
+watcher = DirectoryWatcher(
+	watched_dir,
+	giorna,
+	logging
+)
+watcher.start()
+logging.info("Created notifier succesfully")
+
 
 while 1:
 	time.sleep(1)
 	schedule.run_pending()
+	if not watcher.is_alive():
+		logging.warning("DirectortWatcher is dead, restarting")
+		watcher = DirectoryWatcher(
+			watched_dir,
+			giorna,
+			logging
+		)
+		watcher.start()
+		
