@@ -63,8 +63,8 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
 #Schedule actions
 # ~ schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
 # ~ logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
-schedule.every().day.at("07:00").do(run_threaded, giorna.fetchData)
-schedule.every().day.at("07:30").do(run_threaded, giorna.fetchData)
+for time in config['local']['dailyChecksAt']:
+	schedule.every().day.at(time).do(run_threaded, giorna.fetchData)
 
 
 #Start bot

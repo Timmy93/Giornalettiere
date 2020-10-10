@@ -2,6 +2,7 @@
   "telegram_token" : "",
   "refresh_rate" : 15,
   "filetypes" : ["pdf"],
+  "dailyChecksAt" : [],
   "myChannel" : "@channelName",
   "fileLocation" : "/my/directory",
   "downloadRequest" : "MyFiles",
