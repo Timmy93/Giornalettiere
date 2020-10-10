@@ -65,7 +65,7 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
 # ~ logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
 for selected_time in config['local']['dailyChecksAt']:
 	try:
-		schedule.every().day.at(selected_time).do(run_threaded, giorna.fetchData)
+		schedule.every().day.at(str(selected_time)).do(run_threaded, giorna.fetchData)
 		logging.info("Setting daily check at: "+str(selected_time))
 	except schedule.ScheduleValueError as e:
 		logging.error("Cannot set a scheduled run at ["+str(selected_time)+"]: "+str(e))
