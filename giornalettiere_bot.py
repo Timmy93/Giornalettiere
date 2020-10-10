@@ -13,6 +13,8 @@ import requests
 from subprocess import call
 import schedule
 import threading
+import inotify.adapters
+
 from Giornalettiere import Giornalettiere
 
 #Check if the given path is an absolute path
@@ -60,9 +62,11 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
     logging.info("Started by systemd using argument: "+sys.argv[1])
 
 #Schedule actions
-schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
+# ~ schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
+# ~ logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
+schedule.every().day.at("07:00").do(run_threaded, giorna.fetchData)
 schedule.every().day.at("07:30").do(run_threaded, giorna.fetchData)
-logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
+
 
 #Start bot
 giorna.start()
