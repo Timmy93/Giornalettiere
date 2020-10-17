@@ -80,7 +80,9 @@ class Giornalettiere:
 		return newFiles
 	
 	#Updates the channel using the new files
-	def updateChannel(self):
+	def updateChannel(self, fileFound=""):
+		if fileFound:
+			self.logging.info("updateChannel - Update triggered by this file ["+fileFound+"]")
 		self.logging.info("updateChannel - Start checking for new files")
 		newFiles = self.checkNewFiles()
 		self.logging.info("updateChannel - Found "+str(len(newFiles))+" new files")
@@ -160,7 +162,12 @@ class Giornalettiere:
 		#Starting bot
 		self.TmUpdater.start_polling()
 		self.logging.info("Bot is now polling for new messages")
-
+	
+	#Enable the deamon to answer to message
+	def stop(self):
+		self.TmUpdater.stop()
+		self.logging.info("Bot is now stopped")
+		
 	#Send the selected message
 	def sendMessage(self, message, chat=None, parse_mode=None):
 		mex = str(message)[:4095]

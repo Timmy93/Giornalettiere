@@ -14,7 +14,7 @@ from subprocess import call
 import schedule
 import threading
 from Giornalettiere import Giornalettiere
-from DirectoryWatcher import DirectoryWatcher
+from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
 
 #Check if the given path is an absolute path
 def createAbsolutePath(path):
@@ -61,8 +61,6 @@ if len(sys.argv) > 1 and sys.argv[1]=='systemd':
     logging.info("Started by systemd using argument: "+sys.argv[1])
 
 #Schedule actions
-# ~ schedule.every(config['local']['refresh_rate']).minutes.do(run_threaded, giorna.updateChannel)
-# ~ logging.info("Update every "+str(config['local']['refresh_rate'])+" minutes")
 for selected_time in config['local']['dailyChecksAt']:
 	try:
 		schedule.every().day.at(str(selected_time)).do(run_threaded, giorna.fetchData)
@@ -78,15 +76,17 @@ print('Bot started succesfully')
 logging.info("Bot started succesfully")
 
 #Add notifier
-watched_dir = os.path.join(config['local']['fileLocation'], config['local']['downloadRequest']) 
-watcher = DirectoryWatcher(
-	watched_dir,
-	giorna,
-	logging
-)
-watcher.start()
-logging.info("Created notifier succesfully")
-
+try:
+	watched_dir = os.path.join(config['local']['fileLocation'], config['local']['downloadRequest']) 
+	watcher = DirectoryWatcher(giorna.updateChannel, logging)
+	watcher.watchThisDirectory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
+	watcher.start()
+	logging.info("Created notifier succesfully")
+except Exception as err:
+	logging.error("Cannot setup the notifier ["+str(err)+"]")
+	print("Cannot setup the notifier ["+str(err)+"]")
+	giorna.stop()
+	exit(1)
 
 while 1:
 	time.sleep(1)
