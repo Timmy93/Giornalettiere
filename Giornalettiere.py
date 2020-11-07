@@ -254,6 +254,8 @@ class Giornalettiere:
 		res = subprocess.Popen(["python3", self.localParameters['fetcherScript']], stdout=subprocess.PIPE).communicate()
 		#Decode json result
 		allResult = json.loads(res[0].decode('ascii').strip())
+		for f in allResult:
+			self.logging.info("fetchData - Fetching "+ str(f))
 		result = [f['url'] for f in allResult]
 		self.logging.info("fetchData - Fetched "+ str(len(result)) +" urls")
 		#Request download if any link is found
