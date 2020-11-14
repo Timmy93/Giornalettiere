@@ -89,14 +89,18 @@ except Exception as err:
 	exit(1)
 
 while 1:
-	time.sleep(1)
-	schedule.run_pending()
-	if not watcher.is_alive():
-		logging.warning("DirectortWatcher is dead, restarting")
-		watcher = DirectoryWatcher(
-			watched_dir,
-			giorna,
-			logging
-		)
-		watcher.start()
+	try:
+		time.sleep(1)
+		schedule.run_pending()
+		if not watcher.is_alive():
+			logging.warning("DirectortWatcher is dead, restarting")
+			watcher = DirectoryWatcher(
+				watched_dir,
+				giorna,
+				logging
+			)
+			watcher.start()
+	except Exception as err:
+		logging.exception("Unexpected error during bot execution - Stop bot")
+		exit(1)
 		
