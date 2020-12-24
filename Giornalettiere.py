@@ -209,7 +209,14 @@ class Giornalettiere:
 		#Text message
 		self.TmDispatcher.add_handler(MessageHandler(Filters.text, self.textHandler))
 		self.logging.info("createHandlers - Created handlers for text")
-	
+		#Errors
+		self.TmDispatcher.add_error_handler(self.errorHandler)
+		self.logging.info("createHandlers - Created handlers for errors")
+
+	def errorHandler(self, update=None, context=None):
+		self.logging.error("errorHandler - unknown error:["+str(context.error)+"]")
+
+
 	#Handle a received message
 	def textHandler(self, update=None, context=None):
 		self.logging.info("textHandler - Request from user id ["+str(update.message.chat.id)+"]")
