@@ -216,7 +216,7 @@ class Giornalettiere:
 		self.logging.info("Attempting upload using client")
 		#TODO
 		# The first parameter is the .session file name (absolute paths allowed)
-		with TelegramClient('anon', self.localParameters['apiId'], self.localParameters['apiHash']) as client:
+		async with TelegramClient('anon', self.localParameters['apiId'], self.localParameters['apiHash']) as client:
 			file = await client.upload_file(filePath)
 			self.logging.info("sendBigDocument - Requested upload of file")
 			self.logging.info("sendBigDocument - Uploaded file: "+file.name+"["+str(file.id)+"]")
