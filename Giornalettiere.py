@@ -193,7 +193,9 @@ class Giornalettiere:
 		else:
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
-			document = loop.run_until_complete(self.sendBigDocument(filePath, message, chat))
+			loop.run_until_complete(self.sendBigDocument(filePath, message, chat))
+			self.logging.info("sendDocument - Document sent")
+
 
 	#Send file using canonical bot API
 	def sendSmallDocument(self, filePath, message, chat):
@@ -208,12 +210,12 @@ class Giornalettiere:
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
 		except telegram.error.BadRequest as err:
-			self.logging.error("sendDocument - BadRequest - Cannot send message to chat ["+str(chat)+"]["+str(err)+"] - Skip")
+			self.logging.error("sendSmallDocument - BadRequest - Cannot send message to chat ["+str(chat)+"]["+str(err)+"] - Skip")
 		except telegram.error.Unauthorized:
-			self.logging.info("sendDocument - Bot blocked by chat ["+str(chat)+"] - Remove user")
+			self.logging.info("sendSmallDocument - Bot blocked by chat ["+str(chat)+"] - Remove user")
 			self.removeFromFileList(chat)
 		except telegram.error:
-			self.logging.error("sendDocument - Generic Telegram error")
+			self.logging.error("sendSmallDocument - Generic Telegram error")
 
 	#Send the file using the client insted of the bot
 	async def sendBigDocument(self, filePath, message, chat):
