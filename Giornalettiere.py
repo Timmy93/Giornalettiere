@@ -223,6 +223,7 @@ class Giornalettiere:
 		await self.connectToTelegramClient('bot_session')
 		await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
 		self.logging.info("sendBigDocument - File sent")
+		await client.disconnect()
 
 	# Printing upload progress
 	def callback(self, current, total):
