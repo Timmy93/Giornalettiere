@@ -185,6 +185,7 @@ class Giornalettiere:
 
 	def sendDocument(self, chat, filePath, message):
 		maxSize = 52428800 #50MB - https://core.telegram.org/bots/faq#how-do-i-upload-a-large-file
+		maxSize = 0 #Used to debug client
 		if os.path.getsize(filePath) < maxSize:
 			document = open(filePath, 'rb')
 		else:
