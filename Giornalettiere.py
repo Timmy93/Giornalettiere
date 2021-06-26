@@ -225,7 +225,7 @@ class Giornalettiere:
 	# Printing upload progress
 	def callback(self, current, total):
     print('Uploaded', current, 'out of', total,
-          'bytes: {:.2%}'.format(current / total))
+		'bytes: {:.2%}'.format(current / total))
 
 	#Connect to telegram client
 	async def connectToTelegramClient(self, sessionName):
