@@ -203,8 +203,8 @@ class Giornalettiere:
 				disable_notification=False,
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
-		except telegram.error.BadRequest:
-			self.logging.error("sendDocument - BadRequest - Cannot send message to chat ["+str(chat)+"] - Skip")
+		except telegram.error.BadRequest as err:
+			self.logging.error("sendDocument - BadRequest - Cannot send message to chat ["+str(chat)+"]["+str(err)+"] - Skip")
 		except telegram.error.Unauthorized:
 			self.logging.info("sendDocument - Bot blocked by chat ["+str(chat)+"] - Remove user")
 			self.removeFromFileList(chat)
