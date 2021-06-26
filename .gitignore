@@ -107,5 +107,5 @@ venv.bak/
 #Ignore my personal settings
 Settings/*.json
 Settings/*.db
-DirectoryWatcher/*
+DirectoryWatcher/DirectoryWatcher.py
 temp/*
