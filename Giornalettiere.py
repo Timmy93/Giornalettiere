@@ -184,16 +184,20 @@ class Giornalettiere:
 			self.logging.info("Bot blocked by chat ["+str(chat)+"] - Remove user")
 			self.removeFromFileList(chat)
 
+	#Wraooer function used to send the file according to its size
 	def sendDocument(self, chat, filePath, message):
 		maxSize = 52428800 #50MB - https://core.telegram.org/bots/faq#how-do-i-upload-a-large-file
 		maxSize = 0 #Used to debug client
 		if os.path.getsize(filePath) < maxSize:
-			document = open(filePath, 'rb')
+			self.sendSmallDocument(filePath, message, chat)
 		else:
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
-			document = loop.run_until_complete(self.sendBigDocument(filePath))
-		#Check on size and integration with Telethon
+			document = loop.run_until_complete(self.sendBigDocument(filePath, message))
+
+	#Send file using canonical bot API
+	def sendSmallDocument(self, filePath, message, chat):
+		document = open(filePath, 'rb')
 		try:
 			return self.bot.send_document(
 				chat,
@@ -211,15 +215,14 @@ class Giornalettiere:
 		except telegram.error:
 			self.logging.error("sendDocument - Generic Telegram error")
 
-	#Send the file using the client insted of the bot - Return the reference to the uploaded file
-	async def sendBigDocument(self, filePath):
+	#Send the file using the client insted of the bot
+	async def sendBigDocument(self, filePath, message, chat):
 		self.logging.info("Attempting upload using client")
 		client = TelegramClient('bot_session', self.localParameters['apiId'], self.localParameters['apiHash'])
 		await client.start(bot_token=self.localParameters['telegram_token'],)
-		file = await client.upload_file(filePath)
-		self.logging.info("sendBigDocument - Requested upload of file")
-		self.logging.info("sendBigDocument - Uploaded file: "+file.name+"["+str(file.id)+"]")
-		return telegram.Document(str(file.id), file.md5_checksum)
+		# file = await client.upload_file(filePath)
+		await client.send_file(chat, filePath, caption=message)
+		self.logging.info("sendBigDocument - File sent")
 
 	#Define the approriate handlers
 	def createHandlers(self):
