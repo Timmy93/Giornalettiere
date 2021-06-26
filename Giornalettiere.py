@@ -218,11 +218,17 @@ class Giornalettiere:
 	#Send the file using the client insted of the bot
 	async def sendBigDocument(self, filePath, message, chat):
 		self.logging.info("Attempting upload using client")
-		client = TelegramClient('bot_session', self.localParameters['apiId'], self.localParameters['apiHash'])
-		await client.start(bot_token=self.localParameters['telegram_token'],)
-		# file = await client.upload_file(filePath)
+		self.connectToTelegramClient('bot_session')
 		await client.send_file(chat, filePath, caption=message)
 		self.logging.info("sendBigDocument - File sent")
+
+	#Connect to telegram client
+	async def connectToTelegramClient(sessionName):
+		if not self.client:
+			client = TelegramClient(sessionName, self.localParameters['apiId'], self.localParameters['apiHash'])
+			await client.start(bot_token=self.localParameters['telegram_token'],)
+		else:
+			await client.connect()
 
 	#Define the approriate handlers
 	def createHandlers(self):
