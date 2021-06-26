@@ -232,7 +232,8 @@ class Giornalettiere:
 			self.client = TelegramClient(sessionName, self.localParameters['apiId'], self.localParameters['apiHash'])
 			await self.client.start(bot_token=self.localParameters['telegram_token'],)
 		else:
-			await self.client.connect()
+			if not self.client.is_connected():
+				await self.client.connect()
 
 	#Define the approriate handlers
 	def createHandlers(self):
