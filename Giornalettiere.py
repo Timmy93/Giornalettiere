@@ -223,7 +223,7 @@ class Giornalettiere:
 		self.logging.info("sendBigDocument - File sent")
 
 	#Connect to telegram client
-	async def connectToTelegramClient(sessionName):
+	async def connectToTelegramClient(self, sessionName):
 		if not self.client:
 			client = TelegramClient(sessionName, self.localParameters['apiId'], self.localParameters['apiHash'])
 			await client.start(bot_token=self.localParameters['telegram_token'],)
