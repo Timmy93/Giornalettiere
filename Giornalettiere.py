@@ -219,7 +219,7 @@ class Giornalettiere:
 		file = await client.upload_file(filePath)
 		self.logging.info("sendBigDocument - Requested upload of file")
 		self.logging.info("sendBigDocument - Uploaded file: "+file.name+"["+str(file.id)+"]")
-		return file.id
+		return telegram.Document(file.id, file.md5_checksum)
 
 	#Define the approriate handlers
 	def createHandlers(self):
