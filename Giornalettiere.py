@@ -193,7 +193,7 @@ class Giornalettiere:
 		else:
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
-			document = loop.run_until_complete(self.sendBigDocument(filePath, message))
+			document = loop.run_until_complete(self.sendBigDocument(filePath, message, chat))
 
 	#Send file using canonical bot API
 	def sendSmallDocument(self, filePath, message, chat):
