@@ -189,7 +189,9 @@ class Giornalettiere:
 		if os.path.getsize(filePath) < maxSize:
 			document = open(filePath, 'rb')
 		else:
-			document = self.sendBigDocument(filePath)
+			loop = asyncio.new_event_loop()
+			asyncio.set_event_loop(loop)
+			document = loop.run_until_complete(self.sendBigDocument(filePath))
 		#Check on size and integration with Telethon
 		try:
 			return self.bot.send_document(
@@ -209,7 +211,7 @@ class Giornalettiere:
 			self.logging.error("sendDocument - Generic Telegram error")
 
 	#Send the file using the client insted of the bot - Return the reference to the uploaded file
-	def sendBigDocument(self, filePath):
+	async def sendBigDocument(self, filePath):
 		self.logging.info("Attempting upload using client")
 		#TODO
 		# The first parameter is the .session file name (absolute paths allowed)
