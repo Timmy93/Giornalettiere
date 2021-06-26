@@ -214,7 +214,11 @@ class Giornalettiere:
 		#TODO
 		# The first parameter is the .session file name (absolute paths allowed)
 		with TelegramClient('anon', self.localParameters['apiId'], self.localParameters['apiHash']) as client:
-			client.loop.run_until_complete(client.upload_file(filePath, 'Hello, myself!'))
+			file = await client.upload_file(filePath)
+			self.logging.info("sendBigDocument - Requested upload of file")
+			self.logging.info("sendBigDocument - Uploaded file: "+file.name+"["+str(file.id)+"]")
+		self.logging.info("sendBigDocument - Repeat - Uploaded file: "+file.name+"["+str(file.id)+"]")
+		return file.id
 
 	#Define the approriate handlers
 	def createHandlers(self):
