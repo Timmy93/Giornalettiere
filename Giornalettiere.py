@@ -219,8 +219,13 @@ class Giornalettiere:
 	async def sendBigDocument(self, filePath, message, chat):
 		self.logging.info("Attempting upload using client")
 		await self.connectToTelegramClient('bot_session')
-		await self.client.send_file(chat, filePath, caption=message)
+		await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
 		self.logging.info("sendBigDocument - File sent")
+
+	# Printing upload progress
+	def callback(self, current, total):
+    print('Uploaded', current, 'out of', total,
+          'bytes: {:.2%}'.format(current / total))
 
 	#Connect to telegram client
 	async def connectToTelegramClient(self, sessionName):
