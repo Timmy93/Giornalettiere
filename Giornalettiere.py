@@ -224,7 +224,7 @@ class Giornalettiere:
 
 	#Connect to telegram client
 	async def connectToTelegramClient(self, sessionName):
-		if not hasattr(self, client):
+		if not hasattr(self, 'client'):
 			self.client = TelegramClient(sessionName, self.localParameters['apiId'], self.localParameters['apiHash'])
 			await self.client.start(bot_token=self.localParameters['telegram_token'],)
 		else:
