@@ -214,13 +214,11 @@ class Giornalettiere:
 	#Send the file using the client insted of the bot - Return the reference to the uploaded file
 	async def sendBigDocument(self, filePath):
 		self.logging.info("Attempting upload using client")
-		#TODO
-		# The first parameter is the .session file name (absolute paths allowed)
-		async with TelegramClient('anon', self.localParameters['apiId'], self.localParameters['apiHash']) as client:
-			file = await client.upload_file(filePath)
-			self.logging.info("sendBigDocument - Requested upload of file")
-			self.logging.info("sendBigDocument - Uploaded file: "+file.name+"["+str(file.id)+"]")
-		self.logging.info("sendBigDocument - Repeat - Uploaded file: "+file.name+"["+str(file.id)+"]")
+		client = TelegramClient('bot_session', self.localParameters['apiId'], self.localParameters['apiHash'])
+		await client.start(bot_token=self.localParameters['telegram_token'],)
+		file = await client.upload_file(filePath)
+		self.logging.info("sendBigDocument - Requested upload of file")
+		self.logging.info("sendBigDocument - Uploaded file: "+file.name+"["+str(file.id)+"]")
 		return file.id
 
 	#Define the approriate handlers
