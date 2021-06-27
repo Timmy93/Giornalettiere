@@ -201,7 +201,7 @@ class Giornalettiere:
 	def sendSmallDocument(self, filePath, message, chat):
 		document = open(filePath, 'rb')
 		try:
-			return self.bot.send_document(
+			self.bot.send_document(
 				chat,
 				document,
 				caption=message,
