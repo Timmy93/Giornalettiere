@@ -209,6 +209,7 @@ class Giornalettiere:
 				disable_notification=False,
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
+			self.logging.info("sendSmallDocument - File sent ["+filePath+"]")
 		except telegram.error.BadRequest as err:
 			self.logging.error("sendSmallDocument - BadRequest - Cannot send message to chat ["+str(chat)+"]["+str(err)+"] - Skip")
 		except telegram.error.Unauthorized:
@@ -223,7 +224,7 @@ class Giornalettiere:
 		await self.connectToTelegramClient('bot_session')
 		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
 		await self.client.send_file(chat, filePath, caption=message)
-		self.logging.info("sendBigDocument - File sent")
+		self.logging.info("sendBigDocument - File sent ["+filePath+"]")
 		await self.client.log_out()
 		delattr(self, 'client')
 
