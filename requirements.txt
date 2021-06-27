@@ -3,3 +3,4 @@ setuptools
 python-telegram-bot
 schedule
 inotify
+Telethon==1.22

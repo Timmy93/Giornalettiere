@@ -16,6 +16,8 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram.utils import helpers
 from subprocess import call
 from DbConnector import DbConnector
+import asyncio
+from telethon import TelegramClient
 
 #Check if the given path is an absolute path
 def createAbsolutePath(path):
@@ -26,29 +28,29 @@ def createAbsolutePath(path):
 
 # The main class
 class Giornalettiere:
-	
+
 	#Load config and psw
 	def __init__(self, config, loggingHandler):
 		all_settings_dir 	= "Settings"
 		file_list_path		= "myFileList.json"
 		giornalettiere_db	= "Giornalettiere.db"
-		
+
 		self.config = config
 		self.logging = loggingHandler
-		
+
 		#Loading values
 		self.localParameters = config['local']
 		giornalettiere_db = createAbsolutePath(os.path.join(all_settings_dir,giornalettiere_db))
-		
+
 		#Insert default values
 		if not 'json_db' in self.localParameters:
 			self.localParameters['json_db'] = False
-		
-		#Define File List		
+
+		#Define File List
 		self.db = DbConnector(giornalettiere_db, self.logging)
 		self.fileListPath = createAbsolutePath(os.path.join(all_settings_dir,file_list_path))
 		self.readFileList()
-		
+
 		#Connecting to Telegram
 		self.TmUpdater = Updater(self.localParameters['telegram_token'], use_context=True)
 		self.TmDispatcher = self.TmUpdater.dispatcher
@@ -62,7 +64,7 @@ class Giornalettiere:
 		newFiles = []
 		self.readFileList()
 		observedDir = os.path.join(
-			self.localParameters['fileLocation'], 
+			self.localParameters['fileLocation'],
 			self.localParameters['downloadRequest']
 		)
 		self.logging.info("checkNewFiles - checking new file in ["+observedDir+"]")
@@ -78,7 +80,7 @@ class Giornalettiere:
 						self.addToFileList(file)
 		self.logging.info('File research concluded')
 		return newFiles
-	
+
 	#Updates the channel using the new files
 	def updateChannel(self, fileFound=""):
 		if fileFound:
@@ -91,8 +93,8 @@ class Giornalettiere:
 			#TODO Define a message for each file (es. hashtag, date)
 			message = ""
 			response = self.sendDocument(
-				self.localParameters['myChannel'], 
-				newFile, 
+				self.localParameters['myChannel'],
+				newFile,
 				message
 			)
 		self.logging.info('updateChannel - Done')
@@ -105,7 +107,7 @@ class Giornalettiere:
 			self.myFileList = self.db.getFiles()
 			self.logging.info('File list loaded')
 			return self.myFileList
-	
+
 	#Read my file list as a json
 	def readJsonFileList(self):
 		try:
@@ -121,11 +123,11 @@ class Giornalettiere:
 			self.myFileList = []
 		self.logging.info('File list loaded')
 		return self.myFileList
-	
+
 	#Updates the file list
 	def dumpFileList(self):
 		self.storeJsonFileList()
-	
+
 	#Add a file to the file list
 	def addToFileList(self, filename):
 		filename = str(filename)
@@ -136,7 +138,7 @@ class Giornalettiere:
 		else:
 			self.db.insertFile(filename)
 			self.logging.info('Appended to DB file list ['+str(filename)+']')
-	
+
 	#Remove a file from the file list
 	def removeFromFileList(self, filename):
 		filename = str(filename)
@@ -147,12 +149,12 @@ class Giornalettiere:
 			self.dumpFileList()
 		else:
 			self.db.removeFile(filename)
-		
+
 	#Updates the json file list
 	def storeJsonFileList(self):
 		with open(self.fileListPath, "w") as json_file:
 				json.dump(self.myfileList, json_file)
-	
+
 	#Enable the deamon to answer to message
 	def start(self):
 		#Defining handlers
@@ -162,12 +164,12 @@ class Giornalettiere:
 		#Starting bot
 		self.TmUpdater.start_polling()
 		self.logging.info("Bot is now polling for new messages")
-	
+
 	#Enable the deamon to answer to message
 	def stop(self):
 		self.TmUpdater.stop()
 		self.logging.info("Bot is now stopped")
-		
+
 	#Send the selected message
 	def sendMessage(self, message, chat=None, parse_mode=None):
 		mex = str(message)[:4095]
@@ -181,26 +183,64 @@ class Giornalettiere:
 		except telegram.error.Unauthorized:
 			self.logging.info("Bot blocked by chat ["+str(chat)+"] - Remove user")
 			self.removeFromFileList(chat)
-	
+
+	#Wraooer function used to send the file according to its size
 	def sendDocument(self, chat, filePath, message):
+		maxSize = 52428800 #50MB - https://core.telegram.org/bots/faq#how-do-i-upload-a-large-file
+		# maxSize = 0 #Used to debug client
+		if os.path.getsize(filePath) < maxSize:
+			self.sendSmallDocument(filePath, message, chat)
+		else:
+			loop = asyncio.new_event_loop()
+			asyncio.set_event_loop(loop)
+			loop.run_until_complete(self.sendBigDocument(filePath, message, chat))
+			self.logging.info("sendDocument - Document sent")
+
+
+	#Send file using canonical bot API
+	def sendSmallDocument(self, filePath, message, chat):
 		document = open(filePath, 'rb')
 		try:
-			return self.bot.send_document(
-				chat, 
-				document, 
-				caption=message, 
+			self.bot.send_document(
+				chat,
+				document,
+				caption=message,
 				timeout=600,
-				disable_notification=False, 
+				disable_notification=False,
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
-		except telegram.error.BadRequest:
-			self.logging.error("sendDocument - BadRequest - Cannot send message to chat ["+str(chat)+"] - Skip")
+			self.logging.info("sendSmallDocument - File sent ["+filePath+"]")
+		except telegram.error.BadRequest as err:
+			self.logging.error("sendSmallDocument - BadRequest - Cannot send message to chat ["+str(chat)+"]["+str(err)+"] - Skip")
 		except telegram.error.Unauthorized:
-			self.logging.info("sendDocument - Bot blocked by chat ["+str(chat)+"] - Remove user")
+			self.logging.info("sendSmallDocument - Bot blocked by chat ["+str(chat)+"] - Remove user")
 			self.removeFromFileList(chat)
 		except telegram.error:
-			self.logging.error("sendDocument - Generic Telegram error")
-	
+			self.logging.error("sendSmallDocument - Generic Telegram error")
+
+	#Send the file using the client insted of the bot
+	async def sendBigDocument(self, filePath, message, chat):
+		self.logging.info("Attempting upload using client")
+		await self.connectToTelegramClient('bot_session')
+		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
+		await self.client.send_file(chat, filePath, caption=message)
+		self.logging.info("sendBigDocument - File sent ["+filePath+"]")
+		await self.client.log_out()
+		delattr(self, 'client')
+
+	# Printing upload progress
+	def callback(self, current, total):
+		print('Uploaded', current, 'out of', total,	'bytes: {:.2%}'.format(current / total))
+
+	#Connect to telegram client
+	async def connectToTelegramClient(self, sessionName):
+		if not hasattr(self, 'client'):
+			self.client = TelegramClient(sessionName, self.localParameters['apiId'], self.localParameters['apiHash'])
+			await self.client.start(bot_token=self.localParameters['telegram_token'])
+		else:
+			if not self.client.is_connected():
+				await self.client.connect()
+
 	#Define the approriate handlers
 	def createHandlers(self):
 		#Commands
@@ -220,7 +260,7 @@ class Giornalettiere:
 	#Handle a received message
 	def textHandler(self, update=None, context=None):
 		self.logging.info("textHandler - Request from user id ["+str(update.message.chat.id)+"]")
-		
+
 		#Extract all link to download
 		originalLinks = update.message.text.strip().split()
 		requestedLink = []
@@ -228,7 +268,7 @@ class Giornalettiere:
 			downloadLink = downloadLink.strip()
 			if downloadLink.startswith('http'):
 				requestedLink.append(downloadLink)
-		
+
 		#Request link
 		if len(requestedLink) == len(originalLinks):
 			self.logging.info("textHandler - Requested "+str(len(requestedLink))+" link from chat ["+str(update.effective_chat)+"]")
@@ -242,10 +282,10 @@ class Giornalettiere:
 				"Ciao 🙋\! Il bot al momento è in fase di test, ti notificherò in caso di aggiornamenti",
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
-	
+
 	#Send requested link to a download service
 	def requestDownload(self, links):
-		if isinstance(links, list): 
+		if isinstance(links, list):
 			links = "\n".join(links)
 
 		payload = {'titolo': self.localParameters['downloadRequest'], 'link': links}
@@ -253,7 +293,7 @@ class Giornalettiere:
 		r = requests.post(self.localParameters['downloadSite'], data=payload)
 		files = links.splitlines()
 		self.logging.info("requestDownload - Request download of " + str(len(files)) + " files ["+", ".join(files)+"]")
-		
+
 	#Retrieve data to upload on Telegram
 	def fetchData(self):
 		#Get data
@@ -275,7 +315,7 @@ class Giornalettiere:
 		if len(result):
 			self.requestDownload(result)
 		return result
-	
+
 	#Search for new file to download
 	def updateHandler(self, update=None, context=None):
 		self.logging.info("updateHandler - Bot started by: "+str(update.effective_chat))
