@@ -224,7 +224,8 @@ class Giornalettiere:
 		await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
 		#TODO Second file is not sent - Locked app
 		self.logging.info("sendBigDocument - File sent")
-		await client.disconnect()
+		await self.client.log_out()
+		delattr(self, 'client')
 
 	# Printing upload progress
 	def callback(self, current, total):
@@ -232,17 +233,9 @@ class Giornalettiere:
 
 	#Connect to telegram client
 	async def connectToTelegramClient(self, sessionName):
-		if not hasattr(self, 'client'):
+		if not delattr(self, 'client'):
 			self.client = TelegramClient(sessionName, self.localParameters['apiId'], self.localParameters['apiHash'])
 			await self.client.start(bot_token=self.localParameters['telegram_token'])
-			config = await client(functions.help.GetConfigRequest())
-			for option in config.dc_options:
-				if option.ip_address == client.session.server_address:
-					if client.session.dc_id != option.id:
-						log.warning(f"Fixed DC ID in session from {client.session.dc_id} to {option.id}")
-					client.session.set_dc(option.id, option.ip_address, option.port)
-					client.session.save()
-					break
 		else:
 			if not self.client.is_connected():
 				await self.client.connect()
