@@ -187,7 +187,7 @@ class Giornalettiere:
 	#Wraooer function used to send the file according to its size
 	def sendDocument(self, chat, filePath, message):
 		maxSize = 52428800 #50MB - https://core.telegram.org/bots/faq#how-do-i-upload-a-large-file
-		maxSize = 0 #Used to debug client
+		# maxSize = 0 #Used to debug client
 		if os.path.getsize(filePath) < maxSize:
 			self.sendSmallDocument(filePath, message, chat)
 		else:
@@ -221,8 +221,8 @@ class Giornalettiere:
 	async def sendBigDocument(self, filePath, message, chat):
 		self.logging.info("Attempting upload using client")
 		await self.connectToTelegramClient('bot_session')
-		await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
-		#TODO Second file is not sent - Locked app
+		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
+		await self.client.send_file(chat, filePath, caption=message)
 		self.logging.info("sendBigDocument - File sent")
 		await self.client.log_out()
 		delattr(self, 'client')
