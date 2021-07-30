@@ -35,6 +35,7 @@ class Giornalettiere:
 		file_list_path		= "myFileList.json"
 		giornalettiere_db	= "Giornalettiere.db"
 
+		self.settingDir = all_settings_dir
 		self.config = config
 		self.logging = loggingHandler
 
@@ -221,7 +222,8 @@ class Giornalettiere:
 	#Send the file using the client insted of the bot
 	async def sendBigDocument(self, filePath, message, chat):
 		self.logging.info("Attempting upload using client")
-		await self.connectToTelegramClient('bot_session')
+		sessionFile = createAbsolutePath(os.path.join(self.settingDir, 'bot_session.session'))
+		await self.connectToTelegramClient(sessionFile)
 		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
 		await self.client.send_file(chat, filePath, caption=message)
 		self.logging.info("sendBigDocument - File sent ["+filePath+"]")
@@ -304,16 +306,19 @@ class Giornalettiere:
 		if output is None:
 			self.logging.warning("fetchData - Cannot fetch any data using this fetcherScript ["+ str(self.localParameters['fetcherScript'])+"] - Error: ["+str(errors)+"]")
 		else:
-			allResult = json.loads(output.decode('ascii').strip())
-			for f in allResult:
-				self.logging.info("fetchData - Fetching "+ str(f))
-				if isinstance(f, list) and len(f) == 1:
-					f = f[0]
-				if 'url' not in f:
-					self.logging.info("fetchData - Missing url value "+ str(f))
-				else:
-					result.append(f['url'])
-			self.logging.info("fetchData - Fetched "+ str(len(result)) +" urls")
+			try:
+				allResult = json.loads(output.decode('ascii').strip())
+				for f in allResult:
+					self.logging.info("fetchData - Fetching "+ str(f))
+					if isinstance(f, list) and len(f) == 1:
+						f = f[0]
+					if 'url' not in f:
+						self.logging.info("fetchData - Missing url value "+ str(f))
+					else:
+						result.append(f['url'])
+				self.logging.info("fetchData - Fetched "+ str(len(result)) +" urls")
+			except ValueError as e:
+				self.logging.warning("fetchData - Cannot decode response - Failed decode ["+str(e)+"]")
 		#Request download if any link is found
 		if len(result):
 			self.requestDownload(result)

@@ -1,6 +1,14 @@
+#Used for cURL requests
 requests
+# --- To be inspected
 setuptools
+#Used to connect to telegram as bot (for big files)
+Telethon>=1.22
+#Used to connect to telegram as bot
 python-telegram-bot
+#Used to schedule task
 schedule
+#Used for directory watcher
 inotify
-Telethon==1.22
+#Used to extract rar files - For further implementation
+rarfile

@@ -109,3 +109,7 @@ Settings/*.json
 Settings/*.db
 DirectoryWatcher/DirectoryWatcher.py
 temp/*
+#Ignore telegram session
+*.session-journal
+*.session
+
