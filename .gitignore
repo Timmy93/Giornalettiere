@@ -104,12 +104,15 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-#Ignore my personal settings
+# Ignore my personal settings
 Settings/*.json
 Settings/*.db
 DirectoryWatcher/DirectoryWatcher.py
 temp/*
-#Ignore telegram session
+
+# Ignore telegram session
 *.session-journal
 *.session
 
+# Ingore PyCharm config
+.idea
