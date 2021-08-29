@@ -74,7 +74,7 @@ logging.info("Bot started successfully")
 try:
 	watched_dir = os.path.join(config['local']['fileLocation'], config['local']['downloadRequest']) 
 	watcher = DirectoryWatcher(giorna.update_channel, logging)
-	watcher.watchThisDirectory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
+	watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
 	watcher.start()
 	logging.info("Created notifier successfully")
 
@@ -85,7 +85,7 @@ try:
 			if not watcher.is_alive():
 				logging.warning("DirectoryWatcher is dead, restarting")
 				watcher = DirectoryWatcher(giorna.update_channel, logging)
-				watcher.watchThisDirectory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
+				watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
 				watcher.start()
 		except Exception as err:
 			logging.exception("Unexpected error during bot execution - Stop bot")
