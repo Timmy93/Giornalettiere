@@ -334,21 +334,21 @@ class Giornalettiere:
 
 		payload = {'titolo': self.localParameters['downloadRequest'], 'link': links_text}
 		self.logging.info(
-			"requestDownload - Request download to my site [" + self.localParameters['downloadSite'] + "]")
+			"request_download - Request download to my site [" + self.localParameters['downloadSite'] + "]")
 		requests.post(self.localParameters['downloadSite'], data=payload)
 		files = links_text.splitlines()
 		self.logging.info(
-			"requestDownload - Request download of " + str(len(files)) + " files [" + ", ".join(files) + "]")
+			"request_download - Request download of " + str(len(files)) + " files [" + ", ".join(files) + "]")
 
 	# Retrieve data to upload on Telegram
 	def fetch_data(self):
 		result = []
 		# Get data
-		self.logging.info("fetchData - Fetching new documents")
+		self.logging.info("fetch_data - Fetching new documents")
 		output, errors = subprocess.Popen(["python3", self.localParameters['fetcherScript']], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 		# Decode json result
 		if output is None:
-			self.logging.warning("fetchData - Cannot fetch any data using this fetcherScript [" + str(
+			self.logging.warning("fetch_data - Cannot fetch any data using this fetcherScript [" + str(
 				self.localParameters['fetcherScript']) + "] - Error: [" + str(errors) + "]")
 		else:
 			try:
