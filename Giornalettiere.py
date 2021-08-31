@@ -272,7 +272,7 @@ class Giornalettiere:
 			self.client = TelegramClient(session_name, self.localParameters['apiId'], self.localParameters['apiHash'])
 			# await self.client.start(bot_token=self.localParameters['telegram_token'])
 			self.logging.info("Created client instance")
-			self.client.start(bot_token=self.localParameters['telegram_token'])
+			await self.client.start(bot_token=self.localParameters['telegram_token'])
 			self.logging.info("Client restarted")
 		else:
 			if not self.client.is_connected():
