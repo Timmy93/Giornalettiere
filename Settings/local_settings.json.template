@@ -10,5 +10,6 @@
   "apiId" : 12345,
   "apiHash" : "0123456789abcdef0123456789abcdef",
   "fetcherScript" : "/home/my/script",
-  "debug_useOnlyClient": false
+  "debug_useOnlyClient": false,
+  "allow_debugMessage": false
 }

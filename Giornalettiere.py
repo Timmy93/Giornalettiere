@@ -251,12 +251,15 @@ class Giornalettiere:
 		except telegram.error:
 			self.logging.error("send_small_document - Generic Telegram error")
 
-	# Send the file using the client insted of the bot
+	# Send the file using the client instead of the bot
 	async def send_big_document(self, file_path, message, chat):
 		self.logging.info("Attempting upload using client")
 		session_file = create_absolute_path(os.path.join(self.settingDir, 'bot_session.session'))
 		await self.connect_to_telegram_client(session_file)
 		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
+		self.logging.debug("Attempting sending message to chat ["+chat+"] with message ["+message+"]")
+		await self.client.send_message(chat, 'Hello to myself!')
+		self.logging.debug("Attempting sending ["+file_path+"] to chat ["+chat+"] with message ["+message+"]")
 		await self.client.send_file(chat, file_path, caption=message)
 		self.logging.info("sendBigDocument - File sent [" + file_path + "]")
 		await self.client.log_out()
