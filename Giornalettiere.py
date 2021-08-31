@@ -258,7 +258,7 @@ class Giornalettiere:
 		await self.connect_to_telegram_client(session_file)
 		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
 		self.logging.debug("Attempting sending message to chat ["+chat+"] with message ["+message+"]")
-		msg1 = await self.client.send_message(chat, 'Hello to myself!')
+		msg1 = await self.client.send_message(chat, 'Nuovo giornale in arrivo...')
 		self.logging.debug("Attempting sending ["+file_path+"] to chat ["+chat+"] with message ["+message+"]")
 		await self.client.send_file(chat, file_path, caption=message)
 		self.logging.info("sendBigDocument - File sent [" + file_path + "]")
