@@ -257,6 +257,7 @@ class Giornalettiere:
 		session_file = create_absolute_path(os.path.join(self.settingDir, 'bot_session.session'))
 		await self.connect_to_telegram_client(session_file)
 		# await self.client.send_file(chat, filePath, caption=message, progress_callback=self.callback)
+		chat = self.get_chat_parsed(chat)
 		self.logging.debug("Attempting sending message to chat ["+chat+"] with message ["+message+"]")
 		msg1 = await self.client.send_message(chat, 'Nuovo giornale in arrivo...')
 		self.logging.debug("Attempting sending ["+file_path+"] to chat ["+chat+"] with message ["+message+"]")
@@ -266,6 +267,12 @@ class Giornalettiere:
 		self.logging.debug("sendBigDocument - Deleted previous message")
 		await self.client.log_out()
 		delattr(self, 'client')
+
+	def get_chat_parsed(self, chat_id):
+		if chat_id[0] == '-':
+			self.logging.info("Parsing string as negative integer")
+			chat_id = int(chat_id)
+		return chat_id
 
 	# Printing upload progress
 	def callback(self, current, total):
