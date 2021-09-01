@@ -51,6 +51,8 @@ class Giornalettiere:
 		# Insert default values
 		if 'json_db' not in self.localParameters:
 			self.localParameters['json_db'] = False
+		if 'debug_useOnlyClient' not in self.localParameters:
+			self.localParameters['debug_useOnlyClient'] = False
 
 		# Define File List
 		self.db = DbConnector(giornalettiere_db, self.logging)
