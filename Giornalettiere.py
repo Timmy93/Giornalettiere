@@ -326,12 +326,12 @@ class Giornalettiere:
 				update.effective_chat) + "]")
 			self.request_download(requested_link)
 			update.message.reply_text(
-				"Link in download! 😎 🐱‍💻",
-				parse_mode=telegram.constants.PARSEMODE_HTML
+				"Link in download\! 😎 🐱‍💻",
+				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
 		else:
 			update.message.reply_text(
-				"Ciao 🙋! Il bot al momento è in fase di test, ti notificherò in caso di aggiornamenti",
+				"Ciao 🙋\! Il bot al momento è in fase di test, ti notificherò in caso di aggiornamenti",
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
 
