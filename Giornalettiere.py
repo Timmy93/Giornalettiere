@@ -371,16 +371,16 @@ class Giornalettiere:
 			try:
 				all_result = json.loads(output.decode('ascii').strip())
 				for f in all_result:
-					self.logging.info("fetchData - Fetching " + str(f))
+					self.logging.info("fetch_data - Fetching " + str(f))
 					if isinstance(f, list) and len(f) == 1:
 						f = f[0]
 					if 'url' not in f:
-						self.logging.info("fetchData - Missing url value " + str(f))
+						self.logging.info("fetch_data - Missing url value " + str(f))
 					else:
 						result.append(f['url'])
-				self.logging.info("fetchData - Fetched " + str(len(result)) + " urls")
+				self.logging.info("fetch_data - Fetched " + str(len(result)) + " urls")
 			except ValueError as e:
-				self.logging.warning("fetchData - Cannot decode response - Failed decode [" + str(e) + "]")
+				self.logging.warning("fetch_data - Cannot decode response - Failed decode [" + str(e) + "] - Fetcher: [" + str(self.localParameters['fetcherScript']) + "]")
 		# Request download if any link is found
 		if len(result):
 			self.request_download(result)
