@@ -327,7 +327,7 @@ class Giornalettiere:
 			self.request_download(requested_link)
 			update.message.reply_text(
 				"Link in download! 😎 🐱‍💻",
-				parse_mode=telegram.ParseMode.MARKDOWN_V2
+				parse_mode=telegram.constants.PARSEMODE_HTML
 			)
 		else:
 			update.message.reply_text(
