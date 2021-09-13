@@ -8,10 +8,11 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from DbConnector import DbConnector
 import asyncio
 from telethon import TelegramClient
+from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
 
 
 # Check if the given path is an absolute path
-def create_absolute_path(path):
+def create_absolute_path(path: str):
 	if not os.path.isabs(path):
 		current_dir = os.path.dirname(os.path.realpath(__file__))
 		path = os.path.join(current_dir, path)
@@ -91,23 +92,43 @@ class Giornalettiere:
 		self.logging.info('File research concluded')
 		return new_files
 
-	# Updates the channel using the new files
 	def update_channel(self, file_found=""):
+		"""
+		Updates the channel sending new files
+		:param file_found: The file that has triggered the update
+		:return: None
+		"""
 		if file_found:
 			self.logging.info("update_channel - Update triggered by this file [" + file_found + "]")
 		self.logging.info("update_channel - Start checking for new files")
 		new_files = self.check_new_files()
 		self.logging.info("update_channel - Found " + str(len(new_files)) + " new files")
-		for newFile in new_files:
-			self.logging.info("update_channel - The new file is: " + str(newFile))
-			# TODO Define a message for each file (es. hashtag, date)
-			message = ""
-			self.send_document(
-				self.localParameters['myChannel'],
-				newFile,
-				message
-			)
+		while new_files:
+			# Attempts to send only completed files
+			new_files = list(set(new_files)-set(self.send_file_list(new_files)))
+			self.logging.info("update_channel - Waiting to send " + str(len(new_files)) + " new files")
 		self.logging.info('update_channel - Done')
+
+	def send_file_list(self, file_list):
+		"""
+		Attempt to send the completed files
+		:param file_list: The complete list of files to send
+		:return: The list of sent files
+		"""
+		sent_files = []
+		for newFile in file_list:
+			# Wait for new file
+			if DirectoryWatcher.stable_size(newFile):
+				self.logging.info("update_channel - The new file is: " + str(newFile))
+				# TODO Define a message for each file (es. hashtag, date)
+				message = ""
+				self.send_document(
+					self.localParameters['myChannel'],
+					newFile,
+					message
+				)
+				sent_files.append(newFile)
+		return sent_files
 
 	def read_file_list(self):
 		"""
@@ -167,7 +188,7 @@ class Giornalettiere:
 		"""
 		Remove a file from the file list  of already managed
 		:param filename: The file to remove from the list of already managed
-		:return:
+		:return: None
 		"""
 		filename = str(filename)
 		self.logging.info("removeFromFileList - Element before: " + str(len(self.myFileList)))
@@ -178,8 +199,11 @@ class Giornalettiere:
 		else:
 			self.db.removeFile(filename)
 
-	# Enable the deamon to answer to message
 	def start(self):
+		"""
+		Enable the daemon to answer to message
+		:return:  None
+		"""
 		# Defining handlers
 		self.create_handlers()
 		self.logging.info("Bot handlers created")
@@ -188,13 +212,22 @@ class Giornalettiere:
 		self.TmUpdater.start_polling()
 		self.logging.info("Bot is now polling for new messages")
 
-	# Enable the deamon to answer to message
 	def stop(self):
+		"""
+		Stop the daemon
+		:return: None
+		"""
 		self.TmUpdater.stop()
 		self.logging.info("Bot is now stopped")
 
-	# Send the selected message
 	def send_message(self, message, chat=None, parse_mode=None):
+		"""
+		Send a text message on the Telegram chat
+		:param message: The message to send
+		:param chat: The chat to use
+		:param parse_mode: The message parse method
+		:return: None
+		"""
 		mex = str(message)[:4095]
 		if not chat:
 			self.logging.error("Missing chat - Message not sent")
@@ -253,8 +286,14 @@ class Giornalettiere:
 		except telegram.error:
 			self.logging.error("send_small_document - Generic Telegram error")
 
-	# Send the file using the client instead of the bot
 	async def send_big_document(self, file_path, message, chat):
+		"""
+		Send the file using the client instead of the bot
+		:param file_path: The file to send
+		:param message: The message to send with the file
+		:param chat: The chat id the file will be sent to
+		:return: None
+		"""
 		self.logging.info("Attempting upload using client")
 		session_file = create_absolute_path(os.path.join(self.settingDir, 'bot_session.session'))
 		await self.connect_to_telegram_client(session_file)
@@ -271,17 +310,31 @@ class Giornalettiere:
 		delattr(self, 'client')
 
 	def get_chat_parsed(self, chat_id):
+		"""
+		Parse the chat from String to Integer
+		:param chat_id: The chat code to parse
+		:return: The chat code parsed
+		"""
 		if chat_id[0] == '-':
 			self.logging.info("Parsing string as negative integer")
 			chat_id = int(chat_id)
 		return chat_id
 
-	# Printing upload progress
 	def callback(self, current, total):
+		"""
+		Callback function to print the upload progress
+		:param current: The sent bytes
+		:param total: The total bytes to send
+		:return: None
+		"""
 		print('Uploaded', current, 'out of', total, 'bytes: {:.2%}'.format(current / total))
 
-	# Connect to telegram client
 	async def connect_to_telegram_client(self, session_name):
+		"""
+		Connect to telegram client
+		:param session_name: The session name used to connect
+		:return: None
+		"""
 		if not hasattr(self, 'client'):
 			self.client = TelegramClient(session_name, self.localParameters['apiId'], self.localParameters['apiHash'])
 			# await self.client.start(bot_token=self.localParameters['telegram_token'])
@@ -293,8 +346,11 @@ class Giornalettiere:
 				self.logging.info("Connecting client")
 				await self.client.connect()
 
-	# Define the appropriate handlers
 	def create_handlers(self):
+		"""
+		Creates all the appropriate handlers to manage different messages/commands/errors
+		:return:  None
+		"""
 		# Commands
 		self.TmDispatcher.add_handler(CommandHandler("update", self.update_handler))
 		self.logging.info("createHandlers - Created handlers for command")
@@ -306,10 +362,21 @@ class Giornalettiere:
 		self.logging.info("createHandlers - Created handlers for errors")
 
 	def error_handler(self, update=None, context=None):
+		"""
+		The handler to manage errors
+		:param update: The reference to message update
+		:param context: The details on the received error
+		:return: None
+		"""
 		self.logging.error("error_handler - unknown error:[" + str(context.error) + "]")
 
-	# Handle a received message
 	def text_handler(self, update=None, context=None):
+		"""
+		The handler to manage text messages
+		:param update: The reference to message update
+		:param context: The details on the received error
+		:return: None
+		"""
 		self.logging.info("text_handler - Request from user id [" + str(update.message.chat.id) + "]")
 
 		# Extract all link to download
@@ -339,7 +406,7 @@ class Giornalettiere:
 		"""
 		Send requested link to a download service
 		:param links: The list of links to download
-		:return:
+		:return: None
 		"""
 		if isinstance(links, list):
 			links_text = "\n".join(links)
