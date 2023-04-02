@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  giornalettiere:
+    container_name: giornalettiere
+    build: .
+    environment:
+      TZ: 'Europe/Rome'
+      GIORNALETTIERE_FETCHER: ${GIORNALETTIERE_FETCHER}
+      GIORNALETTIERE_DOWNLOAD: ${GIORNALETTIERE_DOWNLOAD}
+    volumes:
+      - ${GIORNALETTIERE_CONFIG}:/app/Settings/local_settings.json:ro'
+      - ${GIORNALETTIERE_FETCHER}:/fetcher
+      - ${GIORNALETTIERE_DOWNLOAD}:/downloads
+    dns:
+      - 9.9.9.9
+      - 1.1.1.1
+    restart: unless-stopped

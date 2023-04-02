@@ -1,0 +1,12 @@
+#Project files
+.git
+.idea
+venv
+__pycache__
+temp
+.gitignore
+
+
+#Settings
+Settings
+.env
