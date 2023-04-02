@@ -10,8 +10,9 @@ services:
       GIORNALETTIERE_DOWNLOAD: ${GIORNALETTIERE_DOWNLOAD}
     volumes:
       - ${GIORNALETTIERE_CONFIG}:/app/Settings/local_settings.json:ro'
-      - ${GIORNALETTIERE_FETCHER}:/fetcher
+      - ${GIORNALETTIERE_FETCHER}:/fetcher/fetcher.py
       - ${GIORNALETTIERE_DOWNLOAD}:/downloads
+      - ${GIORNALETTIERE_WATCHER}:/app/DirectoryWatcher
     dns:
       - 9.9.9.9
       - 1.1.1.1
