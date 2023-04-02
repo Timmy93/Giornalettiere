@@ -1,0 +1,40 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_TARGET_PLATFORM: linux/arm/v7
+
+    steps:    
+    - name: Checkout the code       
+      uses: actions/checkout@v1              
+    
+    - name: Set up Docker Buildx      
+      uses: crazy-max/ghaction-docker-buildx@v1      
+      with:
+        version: latest
+      
+    - name: Prepare      
+      if: success()
+      id: prepare
+      run: | 
+        echo ::set-output name=docker_platform::${DOCKER_TARGET_PLATFORM}        
+        echo ::set-output name=docker_image::${DOCKER_REGISTRY}/${DOCKER_IMAGE}        
+        echo ::set-output name=version::${GITHUB_RUN_NUMBER}        
+     
+    - name: Run Buildx (push image)      
+      if: success()
+      run: |        
+        docker buildx build \
+        --platform ${{ steps.prepare.outputs.docker_platform }} \
+        --tag docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:$GITHUB_SHA
+        docker push docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:$GITHUB_SHA \
+        --file ./Dockerfile \
+        --output type=image,push=true .
