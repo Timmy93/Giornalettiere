@@ -4,7 +4,7 @@ import requests
 import subprocess
 import json
 import telegram
-from telegram.ext import Updater, CommandHandler, MessageHandler, filters as Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from DbConnector import DbConnector
 import asyncio
 from telethon import TelegramClient
