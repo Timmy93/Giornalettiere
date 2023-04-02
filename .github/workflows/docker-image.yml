@@ -35,6 +35,9 @@ jobs:
         docker buildx build \
         --platform ${{ steps.prepare.outputs.docker_platform }} \
         --tag docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:$GITHUB_SHA
+    - name: Push Buildx (push image)      
+      if: success()  
         docker push docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:$GITHUB_SHA \
         --file ./Dockerfile \
         --output type=image,push=true .
+
