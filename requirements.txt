@@ -5,7 +5,7 @@ setuptools
 #Used to connect to telegram as bot (for big files)
 Telethon>=1.22
 #Used to connect to telegram as bot
-python-telegram-bot
+python-telegram-bot==13.15
 #Used to schedule task
 schedule
 #Used for directory watcher
