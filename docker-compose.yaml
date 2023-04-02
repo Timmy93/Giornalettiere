@@ -10,7 +10,7 @@ services:
       GIORNALETTIERE_DOWNLOAD: ${GIORNALETTIERE_DOWNLOAD}
     volumes:
       - ${GIORNALETTIERE_CONFIG}:/app/Settings
-      - ${GIORNALETTIERE_LOG}:/app/Giornalettiere.log:rw
+      - ${GIORNALETTIERE_LOG}/Giornalettiere.log:/app/Giornalettiere.log:rw
       - ${GIORNALETTIERE_FETCHER}:/fetcher/fetcher.py
       - ${GIORNALETTIERE_DOWNLOAD}:/downloads
       - ${GIORNALETTIERE_WATCHER}:/app/DirectoryWatcher
