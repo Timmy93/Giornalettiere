@@ -37,5 +37,6 @@ jobs:
         docker buildx build \
         --platform ${{ env.DOCKER_TARGET_PLATFORM }} \
         --tag docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:$GITHUB_SHA \
+        --tag docker.io/${{ secrets.DOCKER_HUB_USERNAME }}/${{ secrets.DOCKER_HUB_REPOSITORY }}:latest \
         --file ./Dockerfile \
         --output type=image,push=true .
