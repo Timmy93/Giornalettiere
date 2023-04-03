@@ -3,7 +3,7 @@ version: "3"
 services:
   giornalettiere:
     container_name: giornalettiere
-    build: .
+    image: timmy93/giornalettiere:latest
     environment:
       TZ: 'Europe/Rome'
       GIORNALETTIERE_FETCHER: ${GIORNALETTIERE_FETCHER}
