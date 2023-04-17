@@ -1,5 +1,10 @@
 version: "3"
 
+networks:
+  network1:
+    external: true
+    name: "${NETWORK_ID}"
+
 services:
   giornalettiere:
     container_name: giornalettiere
@@ -18,3 +23,5 @@ services:
       - 9.9.9.9
       - 1.1.1.1
     restart: unless-stopped
+    networks:
+      - network1
