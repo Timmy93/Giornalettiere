@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import os
+import tomllib
+
 import requests
 import subprocess
 import json
@@ -8,7 +10,11 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from DbConnector import DbConnector
 import asyncio
 from telethon import TelegramClient
-from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
+
+from GiornalettiereDownloader import GiornalettiereDownloader
+
+
+# from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
 
 
 # Check if the given path is an absolute path
@@ -397,6 +403,8 @@ class Giornalettiere:
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
 		else:
+			links = self.fetch_data()
+			print(f"Trovati {len(links)} links: {str(links)}")
 			update.message.reply_text(
 				"Ciao 🙋\! Il bot al momento è in fase di test, ti notificherò in caso di aggiornamenti",
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
@@ -429,29 +437,27 @@ class Giornalettiere:
 		result = []
 		# Get data
 		self.logging.info("fetch_data - Fetching new documents")
-		output, errors = subprocess.Popen(["python3", self.localParameters['fetcherScript']], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-		# Decode json result
-		if output is None:
-			self.logging.warning("fetch_data - Cannot fetch any data using this fetcherScript [" + str(
-				self.localParameters['fetcherScript']) + "] - Error: [" + str(errors) + "]")
-		else:
-			try:
-				all_result = json.loads(output.decode('ascii').strip())
-				for f in all_result:
-					self.logging.info("fetch_data - Fetching " + str(f))
-					if isinstance(f, list) and len(f) == 1:
-						f = f[0]
-					if 'url' not in f:
-						self.logging.info("fetch_data - Missing url value " + str(f))
-					else:
-						result.append(f['url'])
-				self.logging.info("fetch_data - Fetched " + str(len(result)) + " urls")
-			except ValueError as e:
-				self.logging.warning("fetch_data - Cannot decode response - Failed decode [" + str(e) + "] - Fetcher: [" + str(self.localParameters['fetcherScript']) + "]")
-		# Request download if any link is found
-		if len(result):
-			self.request_download(result)
-		return result
+		print("fetch_data - Fetching new documents")
+		# output, errors = subprocess.Popen(["python3", self.localParameters['fetcherScript']], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+		dir = "DownloadConfig"
+		for filename in os.listdir(dir):
+			if filename.endswith(".toml"):
+				with open(os.path.join(dir, filename), "rb") as f:
+					config = tomllib.load(f)
+
+				gd = GiornalettiereDownloader(self.logging, config)
+				output = gd.extractRelevantLinks()
+				# Decode json result
+				if not output:
+					self.logging.warning("fetch_data - Cannot fetch any data")
+				else:
+					result = []
+					for out in output:
+						result.append(out['url'])
+				# Request download if any link is found
+				if len(result):
+					self.request_download(result)
+				return result
 
 	# Search for new file to download
 	def update_handler(self, update=None, context=None):

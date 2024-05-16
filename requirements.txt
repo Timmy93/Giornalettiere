@@ -1,5 +1,7 @@
 #Used for cURL requests
 requests
+# Used to scrape site
+beautifulsoup4
 # --- To be inspected
 setuptools
 #Used to connect to telegram as bot (for big files)

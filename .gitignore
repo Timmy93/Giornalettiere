@@ -116,3 +116,5 @@ temp/*
 
 # Ingore PyCharm config
 .idea
+/DownloadConfig
+/Settings
