@@ -1,5 +1,6 @@
 #Used for cURL requests
 requests
+urllib3
 # Used to scrape site
 beautifulsoup4
 # --- To be inspected
