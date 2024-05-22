@@ -1,0 +1,35 @@
+[Telegram]
+
+    # Telegram bot token (something like: 0123456789:asdASDasd-1234asd)
+    telegram_token = ""
+
+    # Telegram client API credentials - In order to send files bigger than 50MB
+    apiId = 12345
+    apiHash = "0123456789abcdef0123456789abcdef"
+
+    # Target channel for downloads
+    myChannel = "@channelName"
+
+    # Enable debug mode (disable for production) - Uses only che Telegram client, not the bot
+    debug_useOnlyClient = false
+
+
+[Download]
+
+    # List of filetypes to download
+    filetypes = ["pdf"]
+
+    # List of times (in HH:MM format) to perform daily checks (empty for disabled)
+    dailyChecksAt = ["08:00", "17:00"]
+
+    # Local directory to save downloaded files
+    fileLocation = "/downloads"
+
+    # Text to send when requesting file downloads
+    downloadRequest = "MyFiles"
+
+    # Download site URL
+    downloadSite = "https://my.site.com"
+
+    # Select if using a JSON DB or a SQLite DB
+    json_db = false

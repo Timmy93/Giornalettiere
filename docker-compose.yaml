@@ -11,14 +11,10 @@ services:
     image: timmy93/giornalettiere:latest
     environment:
       TZ: 'Europe/Rome'
-      GIORNALETTIERE_FETCHER: ${GIORNALETTIERE_FETCHER}
-      GIORNALETTIERE_DOWNLOAD: ${GIORNALETTIERE_DOWNLOAD}
     volumes:
       - ${GIORNALETTIERE_CONFIG}:/app/Settings
-      - ${GIORNALETTIERE_LOG}:/app/Giornalettiere.log
-      - ${GIORNALETTIERE_FETCHER}:/fetcher/fetcher.py
+      - ${GIORNALETTIERE_DL_CONFIG}:/app/DownloadConfig
       - ${GIORNALETTIERE_DOWNLOAD}:/downloads
-      - ${GIORNALETTIERE_WATCHER}:/app/DirectoryWatcher
     dns:
       - 9.9.9.9
       - 1.1.1.1

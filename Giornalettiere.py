@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 import os
 import tomllib
-
 import requests
-import subprocess
 import json
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from DbConnector import DbConnector
 import asyncio
 from telethon import TelegramClient
-
 from GiornalettiereDownloader import GiornalettiereDownloader
-
-
-# from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
+from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
 
 
 # Check if the given path is an absolute path
@@ -48,18 +43,17 @@ class Giornalettiere:
 		giornalettiere_db = "Giornalettiere.db"
 
 		self.settingDir = all_settings_dir
-		self.config = config
 		self.logging = logging_handler
 
 		# Loading values
-		self.localParameters = config['local']
+		self.localParameters = config
 		giornalettiere_db = create_absolute_path(os.path.join(all_settings_dir, giornalettiere_db))
 
 		# Insert default values
-		if 'json_db' not in self.localParameters:
-			self.localParameters['json_db'] = False
-		if 'debug_useOnlyClient' not in self.localParameters:
-			self.localParameters['debug_useOnlyClient'] = False
+		if 'json_db' not in self.localParameters['Download']:
+			self.localParameters['Download']['json_db'] = False
+		if 'debug_useOnlyClient' not in self.localParameters['Telegram']:
+			self.localParameters['Telegram']['debug_useOnlyClient'] = False
 
 		# Define File List
 		self.db = DbConnector(giornalettiere_db, self.logging)
@@ -67,7 +61,7 @@ class Giornalettiere:
 		self.read_file_list()
 
 		# Connecting to Telegram
-		self.TmUpdater = Updater(self.localParameters['telegram_token'], use_context=True)
+		self.TmUpdater = Updater(self.localParameters['Telegram']['telegram_token'], use_context=True)
 		self.TmDispatcher = self.TmUpdater.dispatcher
 		self.bot = self.TmUpdater.bot
 		self.logging.info("Connected successfully to Telegram")
@@ -81,14 +75,14 @@ class Giornalettiere:
 		new_files = []
 		self.read_file_list()
 		observed_dir = str(os.path.join(
-			self.localParameters['fileLocation'],
-			self.localParameters['downloadRequest']
+			self.localParameters['Download']['fileLocation'],
+			self.localParameters['Download']['downloadRequest']
 		))
 		self.logging.info("checkNewFiles - checking new file in [" + observed_dir + "]")
 		for root, dirs, files in os.walk(observed_dir):
 			for file in files:
 				# Check file extension
-				if file.endswith(tuple(self.localParameters["filetypes"])):
+				if file.endswith(tuple(self.localParameters['Download']["filetypes"])):
 					# Check if file is new
 					if file not in self.myFileList:
 						found_new = os.path.join(root, file)
@@ -129,7 +123,7 @@ class Giornalettiere:
 				# TODO Define a message for each file (es. hashtag, date)
 				message = ""
 				self.send_document(
-					self.localParameters['myChannel'],
+					self.localParameters['Telegram']['myChannel'],
 					newFile,
 					message
 				)
@@ -141,7 +135,7 @@ class Giornalettiere:
 		Read my file list
 		:return: The list of already managed files
 		"""
-		if self.localParameters['json_db']:
+		if self.localParameters['Download']['json_db']:
 			return self.read_json_file_list()
 		else:
 			self.myFileList = self.db.getFiles()
@@ -183,7 +177,7 @@ class Giornalettiere:
 		"""
 		filename = str(filename)
 		self.myFileList.append(filename)
-		if self.localParameters['json_db']:
+		if self.localParameters['Download']['json_db']:
 			self.dump_file_list()
 			self.logging.info('Appended to JSON file list [' + str(filename) + ']')
 		else:
@@ -200,7 +194,7 @@ class Giornalettiere:
 		self.logging.info("removeFromFileList - Element before: " + str(len(self.myFileList)))
 		self.myFileList.remove(filename)
 		self.logging.info("removeFromFileList - Element after: " + str(len(self.myFileList)))
-		if self.localParameters['json_db']:
+		if self.localParameters['Download']['json_db']:
 			self.dump_file_list()
 		else:
 			self.db.removeFile(filename)
@@ -255,7 +249,7 @@ class Giornalettiere:
 		:return: None
 		"""
 		max_size = 52428800  # 50MB - https://core.telegram.org/bots/faq#how-do-i-upload-a-large-file
-		if os.path.getsize(file_path) >= max_size or self.localParameters['debug_useOnlyClient']:
+		if os.path.getsize(file_path) >= max_size or self.localParameters['Telegram']['debug_useOnlyClient']:
 			loop = asyncio.new_event_loop()
 			asyncio.set_event_loop(loop)
 			loop.run_until_complete(self.send_big_document(file_path, message, chat))
@@ -342,10 +336,9 @@ class Giornalettiere:
 		:return: None
 		"""
 		if not hasattr(self, 'client'):
-			self.client = TelegramClient(session_name, self.localParameters['apiId'], self.localParameters['apiHash'])
-			# await self.client.start(bot_token=self.localParameters['telegram_token'])
+			self.client = TelegramClient(session_name, self.localParameters['Telegram']['apiId'], self.localParameters['Telegram']['apiHash'])
 			self.logging.info("Created client instance")
-			await self.client.start(bot_token=self.localParameters['telegram_token'])
+			await self.client.start(bot_token=self.localParameters['Telegram']['telegram_token'])
 			self.logging.info("Client restarted")
 		else:
 			if not self.client.is_connected():
@@ -403,8 +396,6 @@ class Giornalettiere:
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
 			)
 		else:
-			links = self.fetch_data()
-			print(f"Trovati {len(links)} links: {str(links)}")
 			update.message.reply_text(
 				"Ciao 🙋\! Il bot al momento è in fase di test, ti notificherò in caso di aggiornamenti",
 				parse_mode=telegram.ParseMode.MARKDOWN_V2
@@ -424,10 +415,10 @@ class Giornalettiere:
 			self.logging.warning("request_download - Expected list or string - Reveived: " + type(links))
 			links_text = ""
 
-		payload = {'titolo': self.localParameters['downloadRequest'], 'link': links_text}
+		payload = {'titolo': self.localParameters['Download']['downloadRequest'], 'link': links_text}
 		self.logging.info(
-			"request_download - Request download to my site [" + self.localParameters['downloadSite'] + "]")
-		requests.post(self.localParameters['downloadSite'], data=payload)
+			"request_download - Request download to my site [" + self.localParameters['Download']['downloadSite'] + "]")
+		requests.post(self.localParameters['Download']['downloadSite'], data=payload)
 		files = links_text.splitlines()
 		self.logging.info(
 			"request_download - Request download of " + str(len(files)) + " files [" + ", ".join(files) + "]")
@@ -438,14 +429,13 @@ class Giornalettiere:
 		# Get data
 		self.logging.info("fetch_data - Fetching new documents")
 		print("fetch_data - Fetching new documents")
-		# output, errors = subprocess.Popen(["python3", self.localParameters['fetcherScript']], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-		dir = "DownloadConfig"
-		for filename in os.listdir(dir):
+		downloadConfigDir = "DownloadConfig"
+		downloadConfigFiles = os.listdir(downloadConfigDir)
+		for filename in downloadConfigFiles:
 			if filename.endswith(".toml"):
-				with open(os.path.join(dir, filename), "rb") as f:
-					config = tomllib.load(f)
-
-				gd = GiornalettiereDownloader(self.logging, config)
+				with open(os.path.join(downloadConfigDir, filename), "rb") as f:
+					downloadConfig = tomllib.load(f)
+				gd = GiornalettiereDownloader(self.logging, downloadConfig)
 				output = gd.extractRelevantLinks()
 				# Decode json result
 				if not output:
@@ -458,6 +448,9 @@ class Giornalettiere:
 				if len(result):
 					self.request_download(result)
 				return result
+		if not downloadConfigFiles:
+			self.logging.warning("fetch_data - No download configuration files found - Skip any search")
+			return []
 
 	# Search for new file to download
 	def update_handler(self, update=None, context=None):

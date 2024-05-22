@@ -4,6 +4,8 @@ import os
 import logging
 import time
 import json
+import tomllib
+
 import schedule
 import threading
 from Giornalettiere import Giornalettiere
@@ -27,20 +29,19 @@ def run_threaded(job_func):
 
 # Defining local parameters
 all_settings_dir = "Settings"
-local_path = "local_settings.json"
+local_path = "local_settings.toml"
 logFile = "Giornalettiere.log"
 local_path = create_absolute_path(os.path.join(all_settings_dir, local_path))
-logFile = create_absolute_path(logFile)
+logFile = create_absolute_path(os.path.join(all_settings_dir, logFile))
 
 # Set logging file
 # Update log file if needed
 logging.basicConfig(filename=logFile, level=logging.ERROR, format='%(asctime)s %(levelname)-8s %(message)s')
 
 # Load config
-config = dict()
 try:
-	with open(local_path) as json_file:
-		config['local'] = json.load(json_file)
+	with open(local_path, "rb") as f:
+		config = tomllib.load(f)
 except ValueError:
 	print("Cannot load settings - Invalid json ["+str(local_path)+"]")
 	exit()
@@ -56,7 +57,7 @@ if len(sys.argv) > 1 and sys.argv[1] == 'systemd':
 	logging.info("Started by systemd using argument: "+sys.argv[1])
 
 # Schedule actions
-for selected_time in config['local']['dailyChecksAt']:
+for selected_time in config['Download']['dailyChecksAt']:
 	try:
 		schedule.every().day.at(str(selected_time)).do(run_threaded, giorna.fetch_data)
 		logging.info("Setting daily check at: "+str(selected_time))
@@ -72,7 +73,7 @@ logging.info("Bot started successfully")
 
 # Add notifier
 try:
-	watched_dir = os.path.join(config['local']['fileLocation'], config['local']['downloadRequest']) 
+	watched_dir = os.path.join(config['Download']['fileLocation'], config['Download']['downloadRequest'])
 	watcher = DirectoryWatcher(giorna.update_channel, logging)
 	watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
 	watcher.start()

@@ -107,14 +107,13 @@ venv.bak/
 # Ignore my personal settings
 Settings/*.json
 Settings/*.db
-DirectoryWatcher/DirectoryWatcher.py
+DownloadConfig/*.toml
 temp/*
 
 # Ignore telegram session
 *.session-journal
 *.session
 
-# Ingore PyCharm config
+# Ignore PyCharm config
 .idea
-/DownloadConfig
-/Settings
+

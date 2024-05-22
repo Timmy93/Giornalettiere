@@ -1,0 +1,68 @@
+# The configuration name
+name = "My News Site - RSS Feed Creator"
+
+# The url that can be used to download the material
+domains = [
+	'https://my.site1/',
+    'https://my.site1/'
+]
+
+# The query to request the file
+query = '?do=search&story=News+on+Italy'
+
+# The relevant text that will be used
+relevantContent = [
+	'Italy',
+	'Legge',
+	'Tasse'
+]
+
+
+# This section is used to specify the steps to reach the download post
+[List]
+
+	# Can choose the post from the list based on a date (e.g. "today" to select only today's post)
+	relevant_date = "today"
+	# The key among "search_element" results where the date in "relevant_date" will be searched
+	key_containing_date = "title"
+
+	# The parsing steps to reach the download post
+	search_steps = [
+		{attribute = "id", name = "main-content"}
+	]
+
+	[List.search_element]
+		element = {attribute = "class", name = "news", type = "a"}
+		extract = [
+			{key = "url", value = "href"},
+			{key = "date", value = "text", steps = [
+				{attribute = "class", name = "div-img", type = "div"},
+				{attribute = "class", name = "div-date", type = "div"},
+			]},
+			{key = "title", value = "text", steps = [
+				{attribute = "class", name = "div-text", type = "div"},
+				{type = "h2"},
+			]},
+		]
+
+# This section is used to specify the steps to download a file
+[Download]
+
+	# The host that will be used to download files
+	host = ['gazzettaufficile.it']
+
+	#The HTML page encoding
+	page_encoding = "iso-8859-1"
+
+	# The parsing steps to reach the download element
+	search_steps = [
+		{attribute = "id", name = "div-content"},
+		{attribute = "class", name = "div-item", type = "div"}
+	]
+
+	[Download.search_element]
+		element = {type = "a"}
+		extract = [
+			{key = "title", value = "text"},
+			{key = "url", value = "href"},
+		]
