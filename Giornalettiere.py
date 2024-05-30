@@ -352,6 +352,7 @@ class Giornalettiere:
 		"""
 		# Commands
 		self.TmDispatcher.add_handler(CommandHandler("update", self.update_handler))
+		self.TmDispatcher.add_handler(CommandHandler("news", self.news_handler))
 		self.logging.info("createHandlers - Created handlers for command")
 		# Text message
 		self.TmDispatcher.add_handler(MessageHandler(Filters.text, self.text_handler))
@@ -462,3 +463,9 @@ class Giornalettiere:
 		else:
 			update.message.reply_text(
 				"Ciao " + str(update.effective_chat.first_name) + " 👋, non sono riuscito a trovare nulla di nuovo 🕵️")
+
+	def news_handler(self, update=None, context=None):
+		self.logging.info("news_handler - Bot started by: " + str(update.effective_chat))
+		self.update_channel()
+		update.message.reply_text("Ciao " + str(update.effective_chat.first_name) + " 👋, controllo se ci sono novità ")
+
