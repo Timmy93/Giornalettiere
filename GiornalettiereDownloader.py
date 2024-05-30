@@ -37,12 +37,15 @@ class GiornalettiereDownloader:
         for info in self.extractPostList(url):
             self.logging.info(f"extractRelevantLinks - Extracting download links from: {info['title']} [{info['url']}]")
             for link in self.extractAllDownloadLinks(info['url']):
-                for key in self.relevantContent:
-                    cleanKey = regex.sub('', key).lower()
-                    cleanTitle = regex.sub('', link['title']).lower()
-                    if cleanKey in cleanTitle:
-                        myLink[key].append(link)
-                        self.logging.info(f"{self.name} - extractRelevantLinks - Found: {link['title']} [{link['url']}]")
+                try:
+                    for key in self.relevantContent:
+                        cleanKey = regex.sub('', key).lower()
+                        cleanTitle = regex.sub('', link['title']).lower()
+                        if cleanKey in cleanTitle:
+                            myLink[key].append(link)
+                            self.logging.info(f"{self.name} - extractRelevantLinks - Found: {link['title']} [{link['url']}]")
+                except AttributeError:
+                    self.logging.info(f"{self.name} - extractRelevantLinks - Cannot find any download link in {link}")
         results = []
         for key in list(myLink.keys()):
             # More than 1 result obtained - Get shortest
@@ -80,11 +83,17 @@ class GiornalettiereDownloader:
         else:
             self.logging.warning(f"{self.name} - extractPostList - Relevant date not yet supported")
             reference_date = date.today().strftime("%d.%m.%Y")
-
-        page = requests.get(url)
-        start_soup = BeautifulSoup(page.content, 'html.parser')
-        mainSection = self.executeSearchSteps(start_soup, self.listConfig.get("search_steps", []))
-        posts = self.extractInfo(mainSection, self.listConfig.get("search_element"))
+        try:
+            page = requests.get(url)
+            start_soup = BeautifulSoup(page.content, 'html.parser')
+            mainSection = self.executeSearchSteps(start_soup, self.listConfig.get("search_steps", []))
+            posts = self.extractInfo(mainSection, self.listConfig.get("search_element"))
+        except AttributeError:
+            self.logging.warning(f"{self.name} - extractPostList - Cannot find any posts in {url}")
+            posts = []
+        except requests.exceptions.RequestException:
+            self.logging.warning(f"{self.name} - extractPostList - Cannot connect to {url}")
+            posts = []
         for post in posts:
             if reference_date in post[self.listConfig.get("key_containing_date", "title")]:
                 yield post

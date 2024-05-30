@@ -66,7 +66,7 @@ if len(sys.argv) > 1 and sys.argv[1] == 'systemd':
 	logging.info("Started by systemd using argument: "+sys.argv[1])
 
 # Schedule actions
-delay = config["Download"].get("", 0)
+delay = config["Download"].get("recheckDelay", 0)
 for selected_time in config['Download']['dailyChecksAt']:
 	try:
 		schedule.every().day.at(str(selected_time)).do(run_threaded, giorna.fetch_data)
