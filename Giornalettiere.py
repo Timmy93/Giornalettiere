@@ -466,6 +466,6 @@ class Giornalettiere:
 
 	def news_handler(self, update=None, context=None):
 		self.logging.info("news_handler - Bot started by: " + str(update.effective_chat))
+		update.message.reply_text("Ciao " + str(update.effective_chat.first_name) + " 👋, controllo se ci sono novità 📰")
 		self.update_channel()
-		update.message.reply_text("Ciao " + str(update.effective_chat.first_name) + " 👋, controllo se ci sono novità ")
 
