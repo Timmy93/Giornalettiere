@@ -5,6 +5,7 @@ import logging
 import time
 import json
 import tomllib
+from datetime import datetime, timedelta
 
 import schedule
 import threading
@@ -25,6 +26,14 @@ def create_absolute_path(path):
 def run_threaded(job_func):
 	job_thread = threading.Thread(target=job_func)
 	job_thread.start()
+
+
+def calculate_new_time(start_time_str, delay_minutes):
+	start_time = datetime.strptime(start_time_str, "%H:%M")
+	delay = timedelta(minutes=int(delay_minutes))
+	new_time = start_time + delay
+	# Return the new time as a string in the same format
+	return new_time.strftime("%H:%M")
 
 
 # Defining local parameters
@@ -57,10 +66,15 @@ if len(sys.argv) > 1 and sys.argv[1] == 'systemd':
 	logging.info("Started by systemd using argument: "+sys.argv[1])
 
 # Schedule actions
+delay = config["Download"].get("", 0)
 for selected_time in config['Download']['dailyChecksAt']:
 	try:
 		schedule.every().day.at(str(selected_time)).do(run_threaded, giorna.fetch_data)
 		logging.info("Setting daily check at: "+str(selected_time))
+		if delay:
+			manual_recheck = calculate_new_time(selected_time, delay)
+			schedule.every().day.at(manual_recheck).do(run_threaded, giorna.update_channel)
+			logging.info("Planned manual recheck at: " + str(manual_recheck))
 	except schedule.ScheduleValueError as e:
 		logging.error("Cannot set a scheduled run at ["+str(selected_time)+"]: "+str(e))
 		exit()

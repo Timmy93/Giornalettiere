@@ -25,6 +25,9 @@
     # Local directory to save downloaded files
     fileLocation = "/downloads"
 
+    # If there is number greater than 0, manually checks if new files where downloaded - Useful in case the filesystem does not support inotify (e.g. SMB, NFS)
+    recheckDelay = 0
+
     # Text to send when requesting file downloads
     downloadRequest = "MyFiles"
 
