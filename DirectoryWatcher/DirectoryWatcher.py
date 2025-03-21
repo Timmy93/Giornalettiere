@@ -15,6 +15,9 @@ class DirectoryWatcher(threading.Thread):
 
 	def watch_this_directory(self, directory, events, recursively=False):
 		if not os.path.isdir(directory):
+			os.makedirs(directory, exist_ok=True)
+
+		if not os.path.isdir(directory):
 			self.logging.error("The given directory [" + str(directory) + "] is not a directory")
 			raise Exception("The given directory [" + str(directory) + "] is not a directory")
 

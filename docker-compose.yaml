@@ -1,21 +1,13 @@
-networks:
-  network1:
-    external: true
-    name: "${NETWORK_ID}"
 
 services:
   giornalettiere:
     container_name: giornalettiere
-    image: timmy93/giornalettiere:latest
+    build:
+      context: .
     environment:
       TZ: 'Europe/Rome'
     volumes:
       - ${GIORNALETTIERE_CONFIG}:/app/Settings
       - ${GIORNALETTIERE_DL_CONFIG}:/app/DownloadConfig
       - ${GIORNALETTIERE_DOWNLOAD}:/downloads
-    dns:
-      - 9.9.9.9
-      - 1.1.1.1
     restart: unless-stopped
-    networks:
-      - network1
