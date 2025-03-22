@@ -47,20 +47,18 @@ class DirectoryWatcher(threading.Thread):
 						for we in self.watched_events:
 							if we in event[1]:
 								new_file = os.path.join(event[2], event[3])
-								self.logging.info(
-									"Registered event [" + str(event[1]) + "] for file [" + new_file + "]")
+								self.logging.info(f"Registered event [{event[1]}] for file [{new_file}]")
 								try:
 									while not self.stable_size(new_file):
-										self.logging.info("Still writing on file [" + new_file + "]")
+										self.logging.info(f"Still writing on file [{new_file}]")
 									self.callbackFunction(new_file)
 								except FileNotFoundError as err:
-									self.logging.warning(
-										"File missing [" + new_file + "] - Skipping callback [" + str(err) + "]")
+									self.logging.warning(f"File missing [{new_file}] - Skipping callback [{err}]")
 				self.logging.warning("DirectoryWatcher stopped checking directory")
 			except RuntimeError as err:
-				self.logging.exception("Thread is dead for a Runtime error")
+				self.logging.exception(f"Thread is dead for a Runtime error [{err}]")
 			except Exception as err:
-				self.logging.exception("Unexpected thread death")
+				self.logging.exception(f"Unexpected thread death [{err}]")
 
 	@staticmethod
 	def stable_size(my_file):
