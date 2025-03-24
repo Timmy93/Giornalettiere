@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import asyncio
 import os
+import time
 import tomllib
 import requests
 import json
@@ -89,6 +91,11 @@ class Giornalettiere:
                         self.add_to_file_list(file)
         self.logging.info('File research concluded')
         return new_files
+
+    def sync_update_channel(self, file_found=""):
+        self.logging.info("sync_update_channel - Start checking for new files")
+        asyncio.run(self.update_channel(file_found))
+        self.logging.info("sync_update_channel - Finished updating channel")
 
     async def update_channel(self, file_found=""):
         """
@@ -207,8 +214,26 @@ class Giornalettiere:
         self.logging.info("Bot handlers created")
         print("Bot handlers created")
         # Starting bot
-        self.application.run_polling()
-        self.logging.info("Bot is now polling for new messages")
+        # Retry logic with exponential backoff
+        max_retries = 5
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                # Starting bot
+                self.application.run_polling()
+                self.logging.info("Bot is now polling for new messages")
+                break  # Se il polling parte con successo, esci dal loop
+            except telegram.error.NetworkError as e:
+                retry_count += 1
+                if retry_count >= max_retries:
+                    self.logging.error(f"Failed to start bot after {max_retries} attempts: {e}")
+                    raise
+
+                # Calcola il tempo di attesa con backoff esponenziale
+                wait_time = (2 ** retry_count)
+                self.logging.warning(
+                    f"Network error: {e}. Retrying in {wait_time:.2f} seconds (attempt {retry_count}/{max_retries})")
+                time.sleep(wait_time)
 
     def stop(self):
         """

@@ -86,7 +86,7 @@ def main():
 			logging.info("Setting daily check at: "+str(selected_time))
 			if delay:
 				manual_recheck = calculate_new_time(selected_time, delay)
-				schedule.every().day.at(manual_recheck).do(run_threaded, giorna.update_channel)
+				schedule.every().day.at(manual_recheck).do(run_threaded, giorna.sync_update_channel)
 				logging.info("Planned manual recheck at: " + str(manual_recheck))
 		except schedule.ScheduleValueError as e:
 			logging.error("Cannot set a scheduled run at ["+str(selected_time)+"]: "+str(e))
