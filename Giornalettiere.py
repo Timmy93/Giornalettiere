@@ -309,8 +309,8 @@ class Giornalettiere:
         except telegram.error.Forbidden:
             self.logging.info(f"send_small_document - Bot blocked by chat [{chat}] - Remove user")
             self.remove_from_file_list(chat)
-        except Exception as e:  # Usa Exception invece di telegram.error (che non è un'eccezione)
-            self.logging.error(f"send_small_document - Generic error: {e}")
+        except Exception as e:
+            self.logging.exception(f"send_small_document - Generic error: {e}")
 
     async def send_big_document(self, file_path, message, chat):
         """
