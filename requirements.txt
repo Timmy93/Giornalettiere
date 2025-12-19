@@ -1,15 +1,15 @@
 #Used for cURL requests
-requests==2.32.3
-urllib3==2.3.0
+requests==2.32.5
+urllib3==2.6.2
 # Used to scrape site
-beautifulsoup4==4.13.3
+beautifulsoup4==4.14.3
 #Used to connect to telegram as bot (for big files)
-Telethon==1.39
+Telethon==1.42.0
 #Used to connect to telegram as bot
-python-telegram-bot==22.0
+python-telegram-bot==22.5
 #Used to schedule task
-schedule==1.2.2
+python-telegram-bot[job-queue]==22.5
 #Used for directory watcher
-inotify==0.2.10
+inotify==0.2.12
 #Used to extract rar files - For further implementation
 rarfile==4.2

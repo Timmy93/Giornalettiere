@@ -1,3 +1,27 @@
+[General]
+# The accuracy level on logging
+logLevel = "DEBUG"
+logFile = "Giornalettiere.log"
+
+[[Packages]]
+    name = "httpcore"
+    log_level = "WARNING"
+[[Packages]]
+    name = "telethon"
+    log_level = "WARNING"
+[[Packages]]
+    name = "telegram.ext"
+    log_level = "WARNING"
+[[Packages]]
+    name = "httpx"
+    log_level = "WARNING"
+[[Packages]]
+    name = "asyncio"
+    log_level = "WARNING"
+[[Packages]]
+    name = "apscheduler"
+    log_level = "WARNING"
+
 [Telegram]
 
     # Telegram bot token (something like: 0123456789:asdASDasd-1234asd)
@@ -12,7 +36,6 @@
 
     # Enable debug mode (disable for production) - Uses only che Telegram client, not the bot
     debug_useOnlyClient = false
-
 
 [Download]
 

@@ -1,116 +1,76 @@
 #!/usr/bin/env python3
+import asyncio
 import sys
 import os
 import logging
-import time
-import tomllib
-from datetime import datetime, timedelta
-
-import schedule
-import threading
-from Giornalettiere import Giornalettiere
+from Giornalettiere import Giornalettiere, load_config, MissingConfigException
 from DirectoryWatcher.DirectoryWatcher import DirectoryWatcher
 
+def initialize_log(config, config_dir="Settings"):
+	"""
+    Initialize log file
+    :return:
+    """
+	log_section = "General"
+	packages_section = "Packages"
+	log_file_field, default_log_file = "logFile",  "Giornalettiere.log"
+	log_level_field, default_log_level = "logLevel", "DEBUG"
+	filename = os.path.abspath(os.path.join(os.path.dirname(__file__), config_dir, config.get(log_section, {}).get(log_file_field, default_log_file)))
+	log_level = config.get(log_section, {}).get(log_level_field, default_log_level)
 
-# Check if the given path is an absolute path
-def create_absolute_path(path):
-	if not os.path.isabs(path):
-		current_dir = os.path.dirname(os.path.realpath(__file__))
-		path = os.path.join(current_dir, path)
-		
-	return path
-
-# Used to run scheduled task as threads
-def run_threaded(job_func):
-	job_thread = threading.Thread(target=job_func)
-	job_thread.start()
-
-
-def run_bot(watcher, watched_dir, logging, giorna):
-	while 1:
-		try:
-			time.sleep(1)
-			schedule.run_pending()
-			if not watcher.is_alive():
-				logging.warning("DirectoryWatcher is dead, restarting")
-				watcher = DirectoryWatcher(giorna.update_channel, logging)
-				watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
-				watcher.start()
-		except Exception as err:
-			logging.exception(f"Unexpected error during bot execution - Stop bot [{err}]")
-			exit(1)
-
-def calculate_new_time(start_time_str, delay_minutes):
-	start_time = datetime.strptime(start_time_str, "%H:%M")
-	delay = timedelta(minutes=int(delay_minutes))
-	new_time = start_time + delay
-	# Return the new time as a string in the same format
-	return new_time.strftime("%H:%M")
+	logging.basicConfig(
+		level=log_level,
+		format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+		handlers=[
+			logging.FileHandler(filename, mode="a"),
+		]
+	)
+	for package in config.get(packages_section, []):
+		name = package.get('name')
+		level = package.get('log_level', log_level)
+		logging.getLogger(name).setLevel(level)
+	logger = logging.getLogger("main")
+	return logger
 
 def main():
-	# Defining local parameters
-	all_settings_dir = "Settings"
-	local_path = "local_settings.toml"
-	log_file = "Giornalettiere.log"
-	local_path = create_absolute_path(os.path.join(all_settings_dir, local_path))
-	log_file = create_absolute_path(os.path.join(all_settings_dir, log_file))
+	config_dir = "Settings"
+	config_file_name = 'local_settings.toml'
+	configFile = os.path.abspath(os.path.join(os.path.dirname(__file__), config_dir, config_file_name))
 
-	# Set logging file
-	# Update log file if needed
-	logging.basicConfig(filename=log_file, level=logging.ERROR, format='%(asctime)s %(levelname)-8s %(message)s')
-
-	# Load config
 	try:
-		with open(local_path, "rb") as f:
-			config = tomllib.load(f)
-	except ValueError:
-		print("Cannot load settings - Invalid json ["+str(local_path)+"]")
+		# Load config
+		config = load_config(configFile)
+		logger = initialize_log(config, config_dir)
+		#Create bot class
+		giorna = Giornalettiere(config, config_dir)
+	except MissingConfigException as exc:
+		print(f"Cannot load config: [{configFile}] - Error: {exc}")
+		logging.error(f"Cannot load config: [{configFile}] - Error: {exc}")
 		exit()
-	except FileNotFoundError:
-		print("Cannot load settings - Setting file not found ["+str(local_path)+"]")
+	except Exception as exc:
+		print(f"Critical error during startup: {exc}")
+		logging.exception(f"Critical error during startup: {exc}")
 		exit()
-
-	logging.getLogger().setLevel('INFO')
-	logging.getLogger("httpx").setLevel(logging.WARNING)
-	giorna = Giornalettiere(config, logging)
 
 	# On boot action
 	if len(sys.argv) > 1 and sys.argv[1] == 'systemd':
-		logging.info("Started by systemd using argument: "+sys.argv[1])
-
-	# Schedule actions
-	delay = config["Download"].get("recheckDelay", 0)
-	for selected_time in config['Download']['dailyChecksAt']:
-		try:
-			schedule.every().day.at(str(selected_time)).do(run_threaded, giorna.fetch_data)
-			logging.info("Setting daily check at: "+str(selected_time))
-			if delay:
-				manual_recheck = calculate_new_time(selected_time, delay)
-				schedule.every().day.at(manual_recheck).do(run_threaded, giorna.sync_update_channel)
-				logging.info("Planned manual recheck at: " + str(manual_recheck))
-		except schedule.ScheduleValueError as e:
-			logging.error("Cannot set a scheduled run at ["+str(selected_time)+"]: "+str(e))
-			exit()
+		logger.info("Started by systemd using argument: "+sys.argv[1])
 
 	# Add notifier
 	try:
 		watched_dir = os.path.join(config['Download']['fileLocation'], config['Download']['downloadRequest'])
-		watcher = DirectoryWatcher(giorna.update_channel, logging)
-		watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO'])
+		watcher = DirectoryWatcher(giorna.update_channel, asyncio.get_event_loop())
+		watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO', 'IN_CLOSE_WRITE'])
 		watcher.start()
-		logging.info("Created notifier successfully")
-
-		thread = threading.Thread(target=run_bot, args=(watcher, watched_dir, logging, giorna))
-		thread.start()
-		logging.info("Started scheduler")
+		logger.info("Created notifier successfully")
 
 		# Start bot
+		logger.info("Starting Giornalettiere Bot")
+		print("Starting Giornalettiere Bot")
 		giorna.start()
-		print('Bot started successfully')
-		logging.info("Bot started successfully")
 
 	except Exception as err:
-		logging.error("Cannot setup the notifier ["+str(err)+"]")
+		logger.error("Cannot setup the notifier ["+str(err)+"]")
 		print("Cannot setup the notifier ["+str(err)+"]")
 		giorna.stop()
 		exit(1)

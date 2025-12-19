@@ -1,3 +1,5 @@
+import logging
+
 import requests
 from bs4 import BeautifulSoup
 from datetime import date
@@ -6,8 +8,8 @@ import re
 
 class GiornalettiereDownloader:
 
-    def __init__(self, loggingHandler, downloadConfig):
-        self.logging = loggingHandler
+    def __init__(self, downloadConfig):
+        self.logging = logging.getLogger(__name__)
         self.name = downloadConfig['name']
         self.urls = self.compose_urls(downloadConfig['domains'], downloadConfig["query"])
         self.listConfig = downloadConfig["List"]

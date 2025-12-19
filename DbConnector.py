@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+import logging
 import sqlite3
 import os
 
@@ -6,9 +6,9 @@ import os
 class DbConnector:
 	
 	#Load config and psw
-	def __init__(self, dbPath, loggingHandler):
+	def __init__(self, dbPath):
 		self.dbName = dbPath
-		self.logging = loggingHandler
+		self.logging = logging.getLogger(__name__)
 				
 		#Initialize db if missing
 		if not self.dbExists():
@@ -32,6 +32,7 @@ class DbConnector:
 		
 	#Create the table to store the chat
 	def createFileListTable(self, cursor):
+		self.logging.info("Created file list table")
 		sql = "CREATE TABLE files(file_name varchar(64), UNIQUE(file_name))"
 		cursor.execute(sql)
 
