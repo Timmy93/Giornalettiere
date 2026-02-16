@@ -467,10 +467,10 @@ class Giornalettiere:
             self.logging.warning("request_download - Expected list or string - Reveived: " + type(links))
             links_text = ""
 
-        payload = {'titolo': self.config['Download']['downloadRequest'], 'link': links_text}
+        payload = {'api': 'request_download', 'titolo': self.config['Download']['downloadRequest'], 'link': links_text}
         self.logging.info(
             "request_download - Request download to my site [" + self.config['Download']['downloadSite'] + "]")
-        result = requests.post(self.config['Download']['downloadSite'], data=payload)
+        result = requests.post(self.config['Download']['downloadSite'] + "/api.php", data=payload)
         if result.status_code != 200:
             self.logging.error(f"request_download - Cannot request download - Status code: {result.status_code}")
             return

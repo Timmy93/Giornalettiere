@@ -73,6 +73,7 @@ def main():
 		logger.error("Cannot setup the notifier ["+str(err)+"]")
 		print("Cannot setup the notifier ["+str(err)+"]")
 		giorna.stop()
+		print("Exiting")
 		exit(1)
 
 if __name__ == '__main__':
