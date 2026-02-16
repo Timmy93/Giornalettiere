@@ -53,25 +53,25 @@ class DirectoryWatcher(threading.Thread):
 					path = os.path.join(event[2], event[3])
 					self.logging.info(event)
 					# File arrivato nella directory
-					if 'IN_MOVED_TO' in mask or 'IN_CREATE' in mask:
+					if 'IN_CREATE' in mask:
 						self.logging.info(f"File appeared: {path}")
 						pending.add(path)
 
 					# File chiuso dopo scrittura → pronto
-					if 'IN_CLOSE_WRITE' in mask:
+					if 'IN_CLOSE_WRITE' in mask or 'IN_MOVED_TO' in mask :
 						if path in pending:
 							self.logging.info(f"File ready: {path}")
 							pending.remove(path)
-							try:
-								if self.async_mode:
-									asyncio.run_coroutine_threadsafe(
-										self.callbackFunction(path),
-										self.loop
-									)
-								else:
-									self.callbackFunction(path)
-							except FileNotFoundError as err:
-								self.logging.warning(f"File missing [{path}] - Skipping callback [{err}]")
+						try:
+							if self.async_mode:
+								asyncio.run_coroutine_threadsafe(
+									self.callbackFunction(path),
+									self.loop
+								)
+							else:
+								self.callbackFunction(path)
+						except FileNotFoundError as err:
+							self.logging.warning(f"File missing [{path}] - Skipping callback [{err}]")
 
 			except Exception as err:
 				self.logging.exception(f"Unexpected thread death [{err}]")
