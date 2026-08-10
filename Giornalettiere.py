@@ -271,7 +271,7 @@ class Giornalettiere:
             self.logging.info("Bot blocked by chat [" + str(chat) + "] - Remove user")
             self.remove_from_file_list(chat)
 
-    async def send_document(self, chat, file_path, message):
+    async def send_document(self, chat, file_path, message) -> bool:
         """
         Wrapper function used to send the file according to its size
         :param chat: The chat id the file will be sent to
@@ -280,17 +280,22 @@ class Giornalettiere:
         :return: None
         """
         max_size = 52428800  # 50MB - https://core.telegram.org/bots/faq#how-do-i-upload-a-large-file
+        send_result = False
         if os.path.getsize(file_path) >= max_size or self.config['Telegram']['debug_useOnlyClient']:
             self.logging.info("send_document - Sending big document using telethon library")
             # loop = asyncio.new_event_loop()
             # asyncio.set_event_loop(loop)
             # loop.run_until_complete(self.send_big_document(file_path, message, chat))
-            await self.send_big_document(file_path, message, chat)
+            send_result = await self.send_big_document(file_path, message, chat)
         else:
-            await self.send_small_document(file_path, message, chat)
-        self.logging.info("send_document - Document sent")
+            send_result = await self.send_small_document(file_path, message, chat)
+        if send_result:
+            self.logging.info("send_document - Document sent")
+        else:
+            self.logging.error("send_document - Cannot send document")
+        return send_result
 
-    async def send_small_document(self, file_path, message, chat):
+    async def send_small_document(self, file_path, message, chat) -> bool:
         """
         Send file using canonical bot API
         :param file_path: The file to send
@@ -298,6 +303,7 @@ class Giornalettiere:
         :param chat: The chat id the file will be sent to
         :return:
         """
+        send_result = False
         try:
             with open(file_path, 'rb') as document:
                 await self.bot.send_document(
@@ -305,9 +311,16 @@ class Giornalettiere:
                     document=document,
                     caption=message,
                     disable_notification=False,
-                    parse_mode=telegram.constants.ParseMode.MARKDOWN_V2
+                    parse_mode=telegram.constants.ParseMode.MARKDOWN_V2,
+                    write_timeout=120
                 )
                 self.logging.info(f"send_small_document - File sent [{file_path}]")
+                send_result = True
+        except telegram.error.TimedOut as err:
+            self.logging.error(
+                f"send_small_document - Upload timeout "
+                f"file=[{file_path}] chat=[{chat}] - {err}"
+            )
         except telegram.error.BadRequest as err:
             self.logging.error(
                 f"send_small_document - BadRequest - Cannot send message to chat [{chat}][{err}] - Skip")
@@ -316,8 +329,9 @@ class Giornalettiere:
             self.remove_from_file_list(chat)
         except Exception as e:
             self.logging.exception(f"send_small_document - Generic error: {e}")
+        return send_result
 
-    async def send_big_document(self, file_path, message, chat):
+    async def send_big_document(self, file_path, message, chat) -> bool:
         """
         Send the file using the client instead of the bot
         :param file_path: The file to send
@@ -325,9 +339,9 @@ class Giornalettiere:
         :param chat: The chat id the file will be sent to
         :return: None
         """
+        send_result = False
         try:
             self.logging.info("Attempting upload using client")
-
             await self.connect_to_telegram_client(self.session_file)
             # Assicurati che il client sia connesso
             if not self.client.is_connected():
@@ -349,12 +363,13 @@ class Giornalettiere:
                     f"Attempting sending [{file_path}] to chat [{chat}] with message [{message}]")
                 await self.client.send_file(chat, file_path, caption=message)
                 self.logging.info(f"sendBigDocument - File sent [{file_path}]")
+                send_result = True
                 await self.client.delete_messages(chat, msg1)
                 self.logging.debug("sendBigDocument - Deleted previous message")
             except Exception as e:
                 self.logging.error(f"Error during file sending with Telethon: {e}")
                 # Fallback a send_small_document se necessario
-                await self.send_small_document(file_path, message, chat)
+                send_result = await self.send_small_document(file_path, message, chat)
                 # Logout e pulizia
                 await self.client.log_out()
                 delattr(self, 'client')
@@ -362,7 +377,8 @@ class Giornalettiere:
             self.logging.error(f"Overall error in send_big_document: {e}")
             # Fallback a send_small_document
             self.logging.info("Falling back to send_small_document")
-            await self.send_small_document(file_path, message, chat)
+            send_result = await self.send_small_document(file_path, message, chat)
+        return send_result
 
     def get_chat_parsed(self, chat_id):
         """
