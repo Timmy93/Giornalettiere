@@ -9,12 +9,16 @@ import time
 class DirectoryWatcher(threading.Thread):
 
 	def __init__(self, callback_function: callable, async_loop=None):
-		threading.Thread.__init__(self)
+		# daemon=True: if the main process exits without calling stop()
+		# (e.g. a crash), this background thread won't keep the process
+		# alive on its own.
+		threading.Thread.__init__(self, daemon=True)
 		self.async_mode = async_loop is not None
 		self.loop = async_loop
 		self.watched_events = None
 		self.logging = logging.getLogger(__name__)
 		self.callbackFunction = callback_function
+		self._stop_event = threading.Event()
 		self.logging.info("Created DirectoryWatcher element")
 
 	def watch_this_directory(self, directory, events, recursively=False):
@@ -46,9 +50,14 @@ class DirectoryWatcher(threading.Thread):
 	def run(self):
 		pending = set()
 
-		while True:
+		while not self._stop_event.is_set():
 			try:
-				for event in self.notifier.event_gen(yield_nones=False):
+				for event in self.notifier.event_gen(yield_nones=True, timeout_s=1):
+					if self._stop_event.is_set():
+						break
+					if event is None:
+						continue
+
 					mask = event[1]
 					path = os.path.join(event[2], event[3])
 					self.logging.info(event)
@@ -64,17 +73,45 @@ class DirectoryWatcher(threading.Thread):
 							pending.remove(path)
 						try:
 							if self.async_mode:
-								asyncio.run_coroutine_threadsafe(
+								if self.loop.is_closed():
+									self.logging.error(
+										f"Cannot schedule callback for [{path}] - the event loop is closed"
+									)
+									continue
+								future = asyncio.run_coroutine_threadsafe(
 									self.callbackFunction(path),
 									self.loop
 								)
+								future.add_done_callback(self._log_callback_result(path))
 							else:
 								self.callbackFunction(path)
 						except FileNotFoundError as err:
 							self.logging.warning(f"File missing [{path}] - Skipping callback [{err}]")
 
 			except Exception as err:
-				self.logging.exception(f"Unexpected thread death [{err}]")
+				self.logging.exception(f"Unexpected error in DirectoryWatcher loop [{err}]")
+				time.sleep(1)
+
+		self.logging.info("DirectoryWatcher - Thread stopped")
+
+	def _log_callback_result(self, path):
+		def _callback(future):
+			exc = future.exception()
+			if exc is not None:
+				self.logging.error(f"Callback for file [{path}] raised an exception: {exc}")
+		return _callback
+
+	def stop(self):
+		"""
+		Signal the watcher thread to terminate. run() checks this flag at
+		least once per second (see the timeout_s=1 in event_gen above), so
+		the thread will exit shortly after this is called - it does not
+		join() automatically, call self.join() afterwards if you need to
+		block until the thread has actually terminated.
+		:return: None
+		"""
+		self.logging.info("DirectoryWatcher - Stop requested")
+		self._stop_event.set()
 
 
 	@staticmethod

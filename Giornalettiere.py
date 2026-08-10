@@ -2,7 +2,6 @@ import asyncio
 import datetime
 import logging
 import os
-import time
 import tomllib
 import zoneinfo
 from zoneinfo import ZoneInfo
@@ -28,7 +27,7 @@ class Giornalettiere:
     The list of files already managed
     """
 
-    def __init__(self, config, all_settings_dir):
+    def __init__(self, config: dict, all_settings_dir: str):
         """
         Load config and psw
         :param config: The configuration object
@@ -36,10 +35,10 @@ class Giornalettiere:
         file_list_file = "myFileList.json"
         giornalettiere_db_name = "Giornalettiere.db"
         session_file = 'bot_session.session'
-        giornalettiere_db = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), all_settings_dir, giornalettiere_db_name))
-        self.fileListPath = os.path.abspath(os.path.join(os.path.dirname(__file__), all_settings_dir, file_list_file))
-        self.session_file = os.path.abspath(os.path.join(os.path.dirname(__file__), all_settings_dir, session_file))
+        dir_name = str(os.path.dirname(__file__))
+        giornalettiere_db = os.path.abspath(os.path.join(dir_name, all_settings_dir, giornalettiere_db_name))
+        self.fileListPath = os.path.abspath(os.path.join(dir_name, all_settings_dir, file_list_file))
+        self.session_file = os.path.abspath(os.path.join(dir_name, all_settings_dir, session_file))
         self.logging = logging.getLogger(__name__)
         self.config = config
 
@@ -66,7 +65,7 @@ class Giornalettiere:
             await schedule_activity(application, scheduled_time, tz, self.fetch_data)
             if delay:
                 manual_recheck = calculate_new_time(scheduled_time, delay)
-                await schedule_activity(application, manual_recheck, tz, self.sync_update_channel)
+                await schedule_activity(application, manual_recheck, tz, self.update_channel_job)
             self.logging.info(f"Scheduled daily script updates at {scheduled_time}")
 
     def check_new_files(self):
@@ -95,10 +94,17 @@ class Giornalettiere:
         self.logging.info('File research concluded')
         return new_files
 
-    def sync_update_channel(self, file_found=""):
-        self.logging.info("sync_update_channel - Start checking for new files")
-        asyncio.run(self.update_channel(file_found))
-        self.logging.info("sync_update_channel - Finished updating channel")
+    async def update_channel_job(self, context: ContextTypes.DEFAULT_TYPE = None):
+        """
+        Wrapper compatible with JobQueue.run_daily, which always calls its
+        callback as `await callback(context)`. We simply ignore the job
+        context and delegate to update_channel(). Do NOT use asyncio.run()
+        here: this already executes inside PTB's running event loop, and
+        asyncio.run() cannot be called from within a running loop.
+        """
+        self.logging.info("update_channel_job - Start checking for new files")
+        await self.update_channel()
+        self.logging.info("update_channel_job - Finished updating channel")
 
     async def update_channel(self, file_found=""):
         """
@@ -125,8 +131,7 @@ class Giornalettiere:
         """
         sent_files = []
         for newFile in file_list:
-            # Wait for new file
-            if DirectoryWatcher.stable_size(newFile):
+            if await asyncio.to_thread(DirectoryWatcher.stable_size, newFile):
                 self.logging.info("update_channel - The new file is: " + str(newFile))
                 # TODO Define a message for each file (es. hashtag, date)
                 message = ""
@@ -207,43 +212,43 @@ class Giornalettiere:
         else:
             self.db.removeFile(filename)
 
-    def start(self):
+    async def start(self):
         """
-        Enable the daemon to answer to message
-        :return:  None
+        Enable the daemon to answer to message.
+        :return: None
         """
-        # Defining handlers
         self.create_handlers()
         self.logging.info("Bot handlers created")
         print("Bot handlers created")
-        # Starting bot
-        # Retry logic with exponential backoff
-        max_retries = 5
-        retry_count = 0
-        while retry_count < max_retries:
+
+        async with self.application:
+            await self.application.start()
+            await self.application.updater.start_polling(
+                drop_pending_updates=True,
+                bootstrap_retries=-1,  # retry the initial connection forever
+            )
+            self.logging.info("Bot is now polling for new messages")
             try:
-                # Starting bot
-                self.application.run_polling()
-                self.logging.info("Bot is now polling for new messages")
-                break  # Se il polling parte con successo, esci dal loop
-            except telegram.error.NetworkError as e:
-                retry_count += 1
-                if retry_count >= max_retries:
-                    self.logging.error(f"Failed to start bot after {max_retries} attempts: {e}")
-                    raise
+                # Keep the coroutine alive until stop() cancels it / process receives a shutdown signal.
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                self.logging.info("start - Shutdown requested")
+            finally:
+                if self.application.updater.running:
+                    await self.application.updater.stop()
+                if self.application.running:
+                    await self.application.stop()
+        self.logging.info("Bot is now stopped")
 
-                # Calcola il tempo di attesa con backoff esponenziale
-                wait_time = (2 ** retry_count)
-                self.logging.warning(
-                    f"Network error: {e}. Retrying in {wait_time:.2f} seconds (attempt {retry_count}/{max_retries})")
-                time.sleep(wait_time)
-
-    def stop(self):
+    async def stop(self):
         """
-        Stop the daemon
+        Stop the daemon. Must run inside the same event loop as start().
         :return: None
         """
-        self.application.stop()
+        if self.application.updater.running:
+            await self.application.updater.stop()
+        if self.application.running:
+            await self.application.stop()
         self.logging.info("Bot is now stopped")
 
     async def send_message(self, message, chat=None, parse_mode=None):
@@ -479,17 +484,26 @@ class Giornalettiere:
             "request_download - Request download of " + str(len(files)) + " files [" + ", ".join(files) + "]")
 
     # Retrieve data to upload on Telegram
-    def fetch_data(self, context=None):
+    async def fetch_data(self, context: ContextTypes.DEFAULT_TYPE = None):
+        """
+        NOTE: this is an async method because JobQueue.run_daily always does
+        `await callback(context)`. It's also called directly from
+        update_handler (await self.fetch_data()). The actual network/parsing
+        work (fetch_download_url) is synchronous and blocking, so it's
+        offloaded to a worker thread with asyncio.to_thread to avoid
+        freezing the bot's event loop (and therefore all polling/answers)
+        while it downloads pages.
+        """
         result = []
         # Get data
         if context:
             self.logging.info("fetch_data - Started by scheduled job")
             self.logging.info(f"fetch_data - Context: {context}")
         self.logging.info("fetch_data - Fetching new documents")
-        result = self.fetch_download_url(result)
+        result = await asyncio.to_thread(self.fetch_download_url, result)
         # Request download if any link is found
         if len(result):
-            self.request_download(result)
+            await asyncio.to_thread(self.request_download, result)
             return result
         self.logging.warning("fetch_data - No valid download configuration files found - Skip any search")
         return []
@@ -501,7 +515,7 @@ class Giornalettiere:
         for filename in downloadConfigFiles:
             if filename.endswith(".toml"):
                 try:
-                    config_path = os.path.abspath(os.path.join(os.path.dirname(__file__), downloadConfigDir, filename))
+                    config_path = os.path.abspath(os.path.join(os.path.dirname(str(__file__)), downloadConfigDir, filename))
                     downloadConfig = load_config(config_path)
                     with open(os.path.join(downloadConfigDir, filename), "rb") as f:
                         downloadConfig = tomllib.load(f)
@@ -525,7 +539,7 @@ class Giornalettiere:
     # Search for new file to download
     async def update_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         self.logging.info("update_handler - Bot started by: " + str(update.effective_chat))
-        result = self.fetch_data()
+        result = await self.fetch_data()
         if len(result):
             await update.message.reply_text(
                 "Ciao " + str(update.effective_chat.first_name) + " 👋, sto prelevando dei nuovi file 🛒")

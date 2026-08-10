@@ -15,7 +15,7 @@ def initialize_log(config, config_dir="Settings"):
 	packages_section = "Packages"
 	log_file_field, default_log_file = "logFile",  "Giornalettiere.log"
 	log_level_field, default_log_level = "logLevel", "DEBUG"
-	filename = os.path.abspath(os.path.join(os.path.dirname(__file__), config_dir, config.get(log_section, {}).get(log_file_field, default_log_file)))
+	filename = os.path.abspath(os.path.join(os.path.dirname(str(__file__)), config_dir, config.get(log_section, {}).get(log_file_field, default_log_file)))
 	log_level = config.get(log_section, {}).get(log_level_field, default_log_level)
 
 	logging.basicConfig(
@@ -32,10 +32,10 @@ def initialize_log(config, config_dir="Settings"):
 	logger = logging.getLogger("main")
 	return logger
 
-def main():
+async def main():
 	config_dir = "Settings"
 	config_file_name = 'local_settings.toml'
-	configFile = os.path.abspath(os.path.join(os.path.dirname(__file__), config_dir, config_file_name))
+	configFile = os.path.abspath(os.path.join(os.path.dirname(str(__file__)), config_dir, config_file_name))
 
 	try:
 		# Load config
@@ -57,24 +57,36 @@ def main():
 		logger.info("Started by systemd using argument: "+sys.argv[1])
 
 	# Add notifier
+	loop = asyncio.get_running_loop()
+	watcher = None
 	try:
 		watched_dir = os.path.join(config['Download']['fileLocation'], config['Download']['downloadRequest'])
-		watcher = DirectoryWatcher(giorna.update_channel, asyncio.get_event_loop())
+		watcher = DirectoryWatcher(giorna.update_channel, loop)
 		watcher.watch_this_directory(watched_dir, ['IN_CREATE', 'IN_MOVED_TO', 'IN_CLOSE_WRITE'])
 		watcher.start()
 		logger.info("Created notifier successfully")
-
-		# Start bot
-		logger.info("Starting Giornalettiere Bot")
-		print("Starting Giornalettiere Bot")
-		giorna.start()
-
 	except Exception as err:
 		logger.error("Cannot setup the notifier ["+str(err)+"]")
 		print("Cannot setup the notifier ["+str(err)+"]")
-		giorna.stop()
 		print("Exiting")
 		exit(1)
 
+	# Start bot (blocks - via an internal asyncio.Event - until stopped)
+	logger.info("Starting Giornalettiere Bot")
+	print("Starting Giornalettiere Bot")
+	try:
+		await giorna.start()
+	except Exception as err:
+		logger.exception(f"Bot crashed: {err}")
+		print(f"Bot crashed: {err}")
+	finally:
+		await giorna.stop()
+		if watcher is not None:
+			watcher.stop()
+		print("Exiting")
+
 if __name__ == '__main__':
-	main()
+	try:
+		asyncio.run(main())
+	except KeyboardInterrupt:
+		pass
